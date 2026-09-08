@@ -4,9 +4,11 @@ from django.db.models import Q
 
 from businesses.models import Business
 from catalogue.models import Product
+from core.models import ImmutableModel
 
 
-class StockAdjustment(models.Model):
+class StockAdjustment(ImmutableModel):
+    immutable_error = "Stock Adjustments are immutable."
     class Reason(models.TextChoices):
         OPENING = "opening", "Opening stock"
         DAMAGE = "damage", "Damaged stock"
@@ -30,12 +32,11 @@ class StockAdjustment(models.Model):
         ]
 
 
-class StockMovement(models.Model):
+class StockMovement(ImmutableModel):
+    immutable_error = "Stock Movements are immutable."
+
     class Kind(models.TextChoices):
         ADJUSTMENT = "adjustment", "Stock Adjustment"
-        PURCHASE = "purchase", "Purchase"
-        SALE = "sale", "Sale"
-        REVERSAL = "reversal", "Reversal"
 
     business = models.ForeignKey(Business, on_delete=models.PROTECT, related_name="stock_movements")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="stock_movements")
@@ -44,16 +45,7 @@ class StockMovement(models.Model):
     stock_adjustment = models.OneToOneField(
         StockAdjustment,
         on_delete=models.PROTECT,
-        null=True,
-        blank=True,
         related_name="movement",
-    )
-    reversal_of = models.OneToOneField(
-        "self",
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="reversed_by",
     )
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -63,11 +55,3 @@ class StockMovement(models.Model):
         constraints = [
             models.CheckConstraint(condition=~Q(quantity_change=0), name="nonzero_stock_movement")
         ]
-
-    def save(self, *args, **kwargs):
-        if self.pk:
-            raise TypeError("Stock Movements are immutable.")
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        raise TypeError("Stock Movements are immutable.")

@@ -2,9 +2,11 @@ from django.conf import settings
 from django.db import models
 
 from businesses.models import Business
+from core.models import ImmutableModel
 
 
-class AuditEvent(models.Model):
+class AuditEvent(ImmutableModel):
+    immutable_error = "Audit Events are append-only."
     business = models.ForeignKey(Business, on_delete=models.PROTECT, related_name="audit_events")
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     action = models.CharField(max_length=80)
@@ -15,11 +17,3 @@ class AuditEvent(models.Model):
 
     class Meta:
         ordering = ("-created_at", "-pk")
-
-    def save(self, *args, **kwargs):
-        if self.pk:
-            raise TypeError("Audit Events are immutable.")
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        raise TypeError("Audit Events are append-only.")

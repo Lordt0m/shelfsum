@@ -78,6 +78,21 @@ class ProductCreationServiceTests(TestCase):
         self.assertFalse(StockAdjustment.objects.exists())
         self.assertFalse(AuditEvent.objects.exists())
 
+    def test_audit_failure_rolls_back_the_completed_stock_trace(self):
+        with patch(
+            "catalogue.services.record_audit_event",
+            side_effect=RuntimeError("simulated audit failure"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "audit failure"):
+                create_product(
+                    business=self.business, actor=self.actor, details=self.details()
+                )
+
+        self.assertFalse(Product.objects.exists())
+        self.assertFalse(StockAdjustment.objects.exists())
+        self.assertFalse(StockMovement.objects.exists())
+        self.assertFalse(AuditEvent.objects.exists())
+
     def test_identifiers_are_reusable_by_another_business(self):
         first = create_product(
             business=self.business, actor=self.actor, details=self.details()
@@ -122,3 +137,26 @@ class ProductCreationServiceTests(TestCase):
             movement.save()
         with self.assertRaisesRegex(TypeError, "immutable"):
             movement.delete()
+        with self.assertRaisesRegex(TypeError, "immutable"):
+            StockMovement.objects.filter(pk=movement.pk).update(quantity_change=99)
+        with self.assertRaisesRegex(TypeError, "immutable"):
+            StockMovement.objects.filter(pk=movement.pk).delete()
+
+    def test_adjustment_and_audit_event_are_immutable(self):
+        product = create_product(
+            business=self.business, actor=self.actor, details=self.details()
+        )
+        adjustment = StockAdjustment.objects.get(product=product)
+        event = AuditEvent.objects.get(business=self.business)
+
+        adjustment.quantity_change = 99
+        with self.assertRaisesRegex(TypeError, "immutable"):
+            adjustment.save()
+        with self.assertRaisesRegex(TypeError, "immutable"):
+            StockAdjustment.objects.filter(pk=adjustment.pk).update(quantity_change=99)
+        with self.assertRaisesRegex(TypeError, "immutable"):
+            StockAdjustment.objects.filter(pk=adjustment.pk).delete()
+        with self.assertRaisesRegex(TypeError, "append-only"):
+            AuditEvent.objects.filter(pk=event.pk).update(summary="rewritten")
+        with self.assertRaisesRegex(TypeError, "append-only"):
+            AuditEvent.objects.filter(pk=event.pk).delete()
