@@ -1,5 +1,11 @@
 # ShelfSum repository guidance
 
+## Agent skills
+
+- Issue tracker: local Markdown files under `.scratch/`. Read `docs/agents/issue-tracker.md` before creating, updating, or closing tickets.
+- Triage labels: use the canonical statuses in `docs/agents/triage-labels.md`.
+- Domain documentation: read `CONTEXT.md` and relevant records under `docs/adr/` before changing product behaviour. See `docs/agents/domain.md`.
+
 ## Product boundary
 
 ShelfSum is a server-rendered Django application for a small-shop Owner and Staff Members to understand Products, Stock on Hand, Purchases, Sales, Expenses, and operational estimates.
