@@ -1,0 +1,37 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ShelfSum keeps small-shop stock and daily Business activity clear.">
+  <title>{% block title %}ShelfSum{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{% url 'landing' %}" aria-label="ShelfSum home">Shelf<span>Sum</span></a>
+    <nav aria-label="Account navigation">
+      {% if user.is_authenticated %}
+        <a href="{% url 'business_home' %}">Business home</a>
+        <a href="{% url 'password_change' %}">Password</a>
+        <form class="nav-form" action="{% url 'sign_out' %}" method="post">
+          {% csrf_token %}
+          <button class="nav-link" type="submit">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'sign_in' %}">Sign in</a>
+        <a href="{% url 'register' %}">Create account</a>
+      {% endif %}
+    </nav>
+  </header>
+  {% if messages %}
+    <div class="messages" aria-live="polite">
+      {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+    </div>
+  {% endif %}
+  <main class="app-main">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

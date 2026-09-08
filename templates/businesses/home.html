@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}{{ business.name }} — ShelfSum{% endblock %}
+
+{% block content %}
+  <section class="business-hero" aria-labelledby="page-title">
+    <p class="eyebrow">{{ membership.get_role_display }} access</p>
+    <h1 id="page-title">{{ business.name }}</h1>
+    <p>Your private Business workspace is ready. Product and activity records will appear here as the next release slices are completed.</p>
+    <dl class="business-facts">
+      <div><dt>Currency</dt><dd>{{ business.currency }}</dd></div>
+      <div><dt>Timezone</dt><dd>{{ business.timezone }}</dd></div>
+      <div><dt>Your role</dt><dd>{{ membership.get_role_display }}</dd></div>
+    </dl>
+    {% if membership.role == "owner" %}
+      <a class="button" href="{% url 'business_settings' %}">Business settings</a>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -57,6 +57,7 @@ footer {
 }
 
 nav {
+  align-items: center;
   display: flex;
   gap: 24px;
 }
@@ -69,8 +70,25 @@ nav a {
 }
 
 nav a:hover,
-nav a:focus-visible {
+nav a:focus-visible,
+.nav-link:hover,
+.nav-link:focus-visible {
   color: var(--accent-dark);
+}
+
+.nav-form {
+  margin: 0;
+}
+
+.nav-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
 }
 
 .hero {
@@ -131,6 +149,10 @@ h1 {
   color: #ffffff;
   font-weight: 750;
   text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
 }
 
 .button:hover,
@@ -225,6 +247,130 @@ footer p {
   margin: 0;
 }
 
+.app-main {
+  min-height: calc(100vh - 77px);
+  padding: clamp(48px, 8vw, 92px) 0;
+}
+
+.messages {
+  width: min(760px, calc(100% - 40px));
+  margin: 24px auto -24px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--accent);
+  background: var(--surface);
+}
+
+.messages p {
+  margin: 0;
+}
+
+.form-shell,
+.business-hero {
+  width: min(680px, 100%);
+}
+
+.form-shell h1,
+.business-hero h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 7vw, 4.8rem);
+  line-height: 1;
+}
+
+.form-intro,
+.business-hero > p:not(.eyebrow) {
+  max-width: 620px;
+  margin: 22px 0 30px;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.field {
+  margin-bottom: 22px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 750;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--accent);
+  outline: 3px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.field-invalid input,
+.field-invalid textarea {
+  border-color: #a5332d;
+}
+
+.field-errors,
+.form-errors {
+  margin-top: 7px;
+  color: #84271f;
+}
+
+.field-errors ul,
+.form-errors ul,
+.help-text ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.help-text {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.87rem;
+}
+
+.alternate {
+  margin-top: 24px;
+  color: var(--muted);
+}
+
+.alternate a {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.business-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 34px 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.business-facts div {
+  padding: 18px;
+  background: var(--surface);
+}
+
+.business-facts dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.business-facts dd {
+  margin: 5px 0 0;
+  font-weight: 750;
+}
+
 @media (max-width: 720px) {
   .site-header,
   main,
@@ -241,6 +387,8 @@ footer p {
   }
 
   nav {
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 16px;
   }
 
@@ -259,5 +407,9 @@ footer p {
 
   .number {
     margin-bottom: 24px;
+  }
+
+  .business-facts {
+    grid-template-columns: 1fr;
   }
 }

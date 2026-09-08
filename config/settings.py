@@ -13,6 +13,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "accounts",
+    "businesses",
     "core",
 ]
 
@@ -68,3 +70,7 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "sign_in"
+LOGIN_REDIRECT_URL = "business_home"

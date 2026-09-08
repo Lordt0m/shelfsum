@@ -2,7 +2,16 @@
 
 ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current foundation provides the product landing page and a deployment health response. Later vertical slices add identity and Business isolation, Products and opening stock, Purchases, Sales, Expenses, Stock Adjustments, reports, Audit Events, fictional demonstration data, and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, and Owner-only Business settings. Later vertical slices add Products and opening stock, Staff Member management, Purchases, Sales, Expenses, Stock Adjustments, reports, Audit Events, fictional demonstration data, and deployment.
+
+## Current behaviour
+
+- A visitor can register and sign in using a unique email address.
+- Email storage and sign-in are case-insensitive.
+- A newly registered person creates one Business and becomes its Owner.
+- The database and request boundary prevent one person from belonging to a second Business.
+- Business settings are available only to the Owner; Staff Member requests are rejected on the server.
+- Password changes and POST-only sign-out use Django's authenticated session flow.
 
 ## Product boundary
 
@@ -45,6 +54,8 @@ Open `http://127.0.0.1:8000/` for the landing page. The health response is avail
 ```
 
 Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows will add a separate public service seam when those slices are implemented.
+
+The active specification and vertical tickets are kept in [`.scratch/finance-inventory/`](.scratch/finance-inventory/). Product vocabulary and invariants are defined in [`CONTEXT.md`](CONTEXT.md), with consequential technical choices recorded under [`docs/adr/`](docs/adr/).
 
 ## Demonstration access
 
