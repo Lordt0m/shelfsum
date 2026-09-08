@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Establish the project foundation.
 
-**Status:** in-progress
+**Status:** complete
 
 - [x] Registration uses a custom user model with unique email as the login identifier.
 - [x] Registration, sign-in, sign-out, and authenticated password change work through accessible server-rendered forms.
@@ -19,3 +19,4 @@
 - 2026-09-08: Implementation started after Ticket 01 passed standards and specification review.
 - 2026-09-08: Thirteen application tests pass, including registration validation, case-insensitive email sign-in, password change, unauthenticated redirects, one-membership enforcement, and Owner-only settings. Review pending.
 - 2026-09-08: Review found an inactive-membership redirect loop and a missing Demo Business write guard. Both received failing regression tests and centralized server-side fixes; all fifteen tests now pass. Fix verification pending.
+- 2026-09-08: Follow-up standards and specification reviews confirmed both fixes and found no remaining actionable gaps.
