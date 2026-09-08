@@ -18,3 +18,4 @@
 - 2026-09-08: Implementation began after Ticket 02 passed its repaired standards and specification gates.
 - 2026-09-08: Implementation and documentation complete. Twenty-six full-suite tests pass; standards and specification review pending.
 - 2026-09-08: Review found bypassable ORM immutability, editable Stock Adjustments, premature origin states, and incomplete late-failure rollback coverage. The ORM mutation boundary, ledger schema, migration, and tests were tightened; all twenty-eight tests now pass. Fix verification pending.
+- 2026-09-08: Follow-up review rejected a destructive transitional migration and requested direct bulk-update evidence. Because the product is unreleased, the correct required-origin schema now lives in the initial migration; the destructive migration was removed and bulk update is covered.

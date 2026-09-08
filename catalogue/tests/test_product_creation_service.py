@@ -139,6 +139,9 @@ class ProductCreationServiceTests(TestCase):
             movement.delete()
         with self.assertRaisesRegex(TypeError, "immutable"):
             StockMovement.objects.filter(pk=movement.pk).update(quantity_change=99)
+        movement.quantity_change = 99
+        with self.assertRaisesRegex(TypeError, "immutable"):
+            StockMovement.objects.bulk_update([movement], ["quantity_change"])
         with self.assertRaisesRegex(TypeError, "immutable"):
             StockMovement.objects.filter(pk=movement.pk).delete()
 

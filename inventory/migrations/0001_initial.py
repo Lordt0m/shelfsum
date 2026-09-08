@@ -34,13 +34,12 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('quantity_change', models.IntegerField()),
-                ('kind', models.CharField(choices=[('adjustment', 'Stock Adjustment'), ('purchase', 'Purchase'), ('sale', 'Sale'), ('reversal', 'Reversal')], max_length=20)),
+                ('kind', models.CharField(choices=[('adjustment', 'Stock Adjustment')], max_length=20)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('actor', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
                 ('business', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='stock_movements', to='businesses.business')),
                 ('product', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='stock_movements', to='catalogue.product')),
-                ('reversal_of', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='reversed_by', to='inventory.stockmovement')),
-                ('stock_adjustment', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='movement', to='inventory.stockadjustment')),
+                ('stock_adjustment', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='movement', to='inventory.stockadjustment')),
             ],
             options={
                 'ordering': ('-created_at', '-pk'),
