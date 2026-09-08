@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ShelfSum helps small shops track stock and understand everyday business activity.">
+  <title>ShelfSum — stock and business activity, made clear</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{% url 'landing' %}" aria-label="ShelfSum home">Shelf<span>Sum</span></a>
+    <nav aria-label="Main navigation">
+      <a href="#purpose">Purpose</a>
+      <a href="#evidence">Technical foundation</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">Stock clarity for everyday retail</p>
+      <h1 id="hero-title">Know what is on your shelves — and what the numbers mean.</h1>
+      <p class="hero-copy">ShelfSum is being built for a small-shop owner and staff team who need dependable stock records, straightforward daily activity, and reports they can explain.</p>
+      <div class="hero-actions">
+        <a class="button" href="#purpose">Explore the product scope</a>
+        <span class="status">Demo access is coming with fictional data.</span>
+      </div>
+    </section>
+
+    <section class="purpose" id="purpose" aria-labelledby="purpose-title">
+      <div>
+        <p class="eyebrow">Built for small shops</p>
+        <h2 id="purpose-title">One clear record of stock and daily activity</h2>
+      </div>
+      <div class="principles">
+        <article>
+          <p class="number">01</p>
+          <h3>Traceable stock</h3>
+          <p>Every increase, sale, and correction will have an explicit reason rather than an unexplained quantity edit.</p>
+        </article>
+        <article>
+          <p class="number">02</p>
+          <h3>Useful boundaries</h3>
+          <p>Owners manage access. Staff record everyday work. Each business sees only its own records.</p>
+        </article>
+        <article>
+          <p class="number">03</p>
+          <h3>Explainable figures</h3>
+          <p>Reports will connect summaries to the sales, purchases, expenses, and movements beneath them.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="evidence" id="evidence" aria-labelledby="evidence-title">
+      <p class="eyebrow">Technical foundation</p>
+      <h2 id="evidence-title">A focused Django backend, made inspectable</h2>
+      <p>The first release uses server-rendered Django, behaviour-focused tests, a lightweight local setup, and a PostgreSQL release path. The product remains useful without an AI model or paid API.</p>
+      <ul aria-label="Initial technical principles">
+        <li>Python 3.13</li>
+        <li>Django 5.2 LTS</li>
+        <li>Accessible server-rendered pages</li>
+        <li>Public behaviour tests</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>ShelfSum is a portfolio product for demonstrating practical backend engineering.</p>
+  </footer>
+</body>
+</html>
