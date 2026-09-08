@@ -4,14 +4,23 @@ from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
 
-from businesses.access import membership_required, owner_required
+from businesses.access import (
+    demo_business_read_only,
+    inactive_membership_response,
+    membership_for,
+    membership_required,
+    owner_required,
+)
 from businesses.forms import BusinessForm
 from businesses.models import Business, Membership
 
 
 @login_required
 def create_business(request):
-    if Membership.objects.filter(user=request.user).exists():
+    membership = membership_for(request.user)
+    if membership is not None and not membership.is_active:
+        return inactive_membership_response(request)
+    if membership is not None:
         return redirect("business_home")
 
     form = BusinessForm(request.POST or None)
@@ -48,6 +57,7 @@ def business_home(request):
 
 
 @owner_required
+@demo_business_read_only
 def business_settings(request):
     form = BusinessForm(request.POST or None, instance=request.business)
     if request.method == "POST" and form.is_valid():

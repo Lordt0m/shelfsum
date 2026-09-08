@@ -18,3 +18,4 @@
 
 - 2026-09-08: Implementation started after Ticket 01 passed standards and specification review.
 - 2026-09-08: Thirteen application tests pass, including registration validation, case-insensitive email sign-in, password change, unauthenticated redirects, one-membership enforcement, and Owner-only settings. Review pending.
+- 2026-09-08: Review found an inactive-membership redirect loop and a missing Demo Business write guard. Both received failing regression tests and centralized server-side fixes; all fifteen tests now pass. Fix verification pending.

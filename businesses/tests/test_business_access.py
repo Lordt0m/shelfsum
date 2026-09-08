@@ -39,6 +39,23 @@ class BusinessCreationTests(TestCase):
         self.assertRedirects(response, reverse("business_home"))
         self.assertEqual(Business.objects.count(), 1)
 
+    def test_inactive_member_gets_stable_denial_instead_of_redirect_loop(self):
+        business = Business.objects.create(name="Former Shop")
+        Membership.objects.create(
+            user=self.user,
+            business=business,
+            role=Membership.Role.STAFF,
+            is_active=False,
+        )
+
+        home_response = self.client.get(reverse("business_home"))
+        create_response = self.client.get(reverse("business_create"))
+
+        self.assertEqual(home_response.status_code, 403)
+        self.assertContains(home_response, "access is inactive", status_code=403)
+        self.assertEqual(create_response.status_code, 403)
+        self.assertContains(create_response, "access is inactive", status_code=403)
+
 
 class BusinessAccessTests(TestCase):
     def setUp(self):
@@ -87,5 +104,19 @@ class BusinessAccessTests(TestCase):
 
         self.assertEqual(get_response.status_code, 403)
         self.assertEqual(post_response.status_code, 403)
+        self.business.refresh_from_db()
+        self.assertEqual(self.business.name, "Balogun Corner Shop")
+
+    def test_demo_business_settings_reject_owner_writes(self):
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            reverse("business_settings"), {"name": "Changed Demo"}
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "read-only", status_code=403)
         self.business.refresh_from_db()
         self.assertEqual(self.business.name, "Balogun Corner Shop")

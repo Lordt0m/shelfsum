@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — ShelfSum{% endblock %}
+
+{% block content %}
+  <section class="form-shell" aria-labelledby="page-title">
+    <p class="eyebrow">Access boundary</p>
+    <h1 id="page-title">{{ page_title }}</h1>
+    <p class="form-intro">{{ explanation }}</p>
+    <a class="button" href="{% url 'landing' %}">Return to ShelfSum</a>
+  </section>
+{% endblock %}
