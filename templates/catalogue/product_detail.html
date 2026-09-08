@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} — ShelfSum{% endblock %}
+
+{% block content %}
+  <section aria-labelledby="page-title">
+    <p class="eyebrow">{% if product.sku %}{{ product.sku }}{% else %}Product{% endif %}</p>
+    <h1 id="page-title">{{ product.name }}</h1>
+    {% if product.description %}<p class="form-intro">{{ product.description }}</p>{% endif %}
+    <dl class="business-facts product-facts">
+      <div><dt>Stock on Hand</dt><dd>{{ product.stock_on_hand }} units</dd></div>
+      <div><dt>Selling price</dt><dd>NGN {{ product.selling_price }}</dd></div>
+      <div><dt>Unit-cost estimate</dt><dd>NGN {{ product.unit_cost }}</dd></div>
+      <div><dt>Low-stock threshold</dt><dd>{{ product.low_stock_threshold }} units</dd></div>
+    </dl>
+    <h2>Movement history</h2>
+    {% if product.stock_movements.all %}
+      <div class="record-list">
+        {% for movement in product.stock_movements.all %}
+          <div class="record-row">
+            <span><strong>{{ movement.stock_adjustment.get_reason_display|default:movement.get_kind_display }}</strong><small>{{ movement.created_at|date:"j M Y, H:i" }}</small></span>
+            <span>{% if movement.quantity_change > 0 %}+{% endif %}{{ movement.quantity_change }} units</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state">No Stock Movements yet. Stock on Hand began at zero.</p>
+    {% endif %}
+  </section>
+{% endblock %}

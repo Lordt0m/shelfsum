@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class RegistrationTests(TestCase):
     def test_visitor_can_register_with_email_and_is_guided_to_business_creation(self):
         response = self.client.post(
@@ -39,6 +40,7 @@ class RegistrationTests(TestCase):
         self.assertEqual(get_user_model().objects.count(), 1)
 
 
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class SessionAuthenticationTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(

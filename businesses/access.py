@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 
 from businesses.models import Membership
+from businesses.rules import DemoBusinessReadOnly, ensure_business_write_allowed
 
 
 def membership_for(user):
@@ -52,19 +53,24 @@ def membership_required(view_function):
 def demo_business_read_only(view_function):
     @wraps(view_function)
     def wrapped(request, *args, **kwargs):
-        if request.method not in {"GET", "HEAD", "OPTIONS"} and request.business.is_demo:
-            return render(
-                request,
-                "businesses/access_blocked.html",
-                {
-                    "page_title": "Demo Business is read-only",
-                    "explanation": (
-                        "This fictional Demo Business is read-only so every visitor "
-                        "sees the same reliable data."
-                    ),
-                },
-                status=403,
-            )
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+            try:
+                ensure_business_write_allowed(
+                    business=request.business, actor=request.user
+                )
+            except DemoBusinessReadOnly:
+                return render(
+                    request,
+                    "businesses/access_blocked.html",
+                    {
+                        "page_title": "Demo Business is read-only",
+                        "explanation": (
+                            "This fictional Demo Business is read-only so every visitor "
+                            "sees the same reliable data."
+                        ),
+                    },
+                    status=403,
+                )
         return view_function(request, *args, **kwargs)
 
     return wrapped

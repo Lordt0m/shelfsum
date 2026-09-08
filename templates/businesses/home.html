@@ -15,5 +15,6 @@
     {% if membership.role == "owner" %}
       <a class="button" href="{% url 'business_settings' %}">Business settings</a>
     {% endif %}
+    <a class="text-link" href="{% url 'product_list' %}">View Products</a>
   </section>
 {% endblock %}

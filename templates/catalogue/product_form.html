@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Create Product — ShelfSum{% endblock %}
+
+{% block content %}
+  <section class="form-shell" aria-labelledby="page-title">
+    <p class="eyebrow">Catalogue</p>
+    <h1 id="page-title">Create Product</h1>
+    <p class="form-intro">Opening quantity is recorded as a traceable Stock Adjustment. Stock on Hand cannot be edited directly.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+        <div class="field{% if field.errors %} field-invalid{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="field-errors" role="alert">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button class="button" type="submit">Create Product</button>
+    </form>
+  </section>
+{% endblock %}

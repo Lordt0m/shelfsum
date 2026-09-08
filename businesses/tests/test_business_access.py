@@ -1,10 +1,11 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from businesses.models import Business, Membership
 
 
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class BusinessCreationTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
@@ -57,6 +58,7 @@ class BusinessCreationTests(TestCase):
         self.assertContains(create_response, "access is inactive", status_code=403)
 
 
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class BusinessAccessTests(TestCase):
     def setUp(self):
         self.owner = get_user_model().objects.create_user(

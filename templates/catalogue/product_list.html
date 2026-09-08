@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Products — ShelfSum{% endblock %}
+
+{% block content %}
+  <section aria-labelledby="page-title">
+    <div class="page-heading">
+      <div><p class="eyebrow">Catalogue</p><h1 id="page-title">Products</h1></div>
+      <a class="button" href="{% url 'product_create' %}">Create Product</a>
+    </div>
+    {% if products %}
+      <div class="record-list">
+        {% for product in products %}
+          <a href="{% url 'product_detail' product.pk %}">
+            <span><strong>{{ product.name }}</strong>{% if product.sku %}<small>{{ product.sku }}</small>{% endif %}</span>
+            <span>{{ product.stock_on_hand }} units</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state">No Products yet. Create the first Product to begin a traceable stock record.</p>
+    {% endif %}
+  </section>
+{% endblock %}
