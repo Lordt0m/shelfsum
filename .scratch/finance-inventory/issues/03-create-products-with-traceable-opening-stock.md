@@ -4,7 +4,7 @@
 
 **Blocked by:** 02: Register an Owner and create a Business.
 
-**Status:** in-progress
+**Status:** complete
 
 - [x] A Product records the approved catalogue fields, decimal prices, whole-unit Stock on Hand, low-stock threshold, and active state.
 - [x] Product names and non-empty SKUs are unique within a Business but reusable by another Business.
@@ -19,3 +19,4 @@
 - 2026-09-08: Implementation and documentation complete. Twenty-six full-suite tests pass; standards and specification review pending.
 - 2026-09-08: Review found bypassable ORM immutability, editable Stock Adjustments, premature origin states, and incomplete late-failure rollback coverage. The ORM mutation boundary, ledger schema, migration, and tests were tightened; all twenty-eight tests now pass. Fix verification pending.
 - 2026-09-08: Follow-up review rejected a destructive transitional migration and requested direct bulk-update evidence. Because the product is unreleased, the correct required-origin schema now lives in the initial migration; the destructive migration was removed and bulk update is covered.
+- 2026-09-08: Final standards and specification reviews found no remaining actionable gaps. Twenty-eight tests, system checks, and migration drift checks pass.
