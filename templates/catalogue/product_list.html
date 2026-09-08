@@ -8,17 +8,23 @@
       <div><p class="eyebrow">Catalogue</p><h1 id="page-title">Products</h1></div>
       <a class="button" href="{% url 'product_create' %}">Create Product</a>
     </div>
+    <form class="filter-bar" method="get" role="search">
+      <label class="field"><span>Search</span><input type="search" name="q" value="{{ query }}" placeholder="Name or SKU"></label>
+      <label class="field"><span>Status</span><select name="status"><option value="active"{% if status == "active" %} selected{% endif %}>Active</option><option value="inactive"{% if status == "inactive" %} selected{% endif %}>Inactive</option><option value="all"{% if status == "all" %} selected{% endif %}>All</option></select></label>
+      <label class="field"><span>Stock</span><select name="stock"><option value="all"{% if stock == "all" %} selected{% endif %}>All stock</option><option value="low"{% if stock == "low" %} selected{% endif %}>Low stock</option></select></label>
+      <button class="button" type="submit">Apply filters</button>
+    </form>
     {% if products %}
       <div class="record-list">
         {% for product in products %}
           <a href="{% url 'product_detail' product.pk %}">
             <span><strong>{{ product.name }}</strong>{% if product.sku %}<small>{{ product.sku }}</small>{% endif %}</span>
-            <span>{{ product.stock_on_hand }} units</span>
+            <span>{{ product.stock_on_hand }} units{% if product.is_low_stock %}<small>Low stock</small>{% endif %}{% if not product.is_active %}<small>Inactive</small>{% endif %}</span>
           </a>
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state">No Products yet. Create the first Product to begin a traceable stock record.</p>
+      <p class="empty-state">{% if query or status != "active" or stock != "all" %}No Products match these filters.{% else %}No Products yet. Create the first Product to begin a traceable stock record.{% endif %}</p>
     {% endif %}
   </section>
 {% endblock %}

@@ -5,6 +5,11 @@ from django.db.models.functions import Lower
 from businesses.models import Business
 
 
+class ProductQuerySet(models.QuerySet):
+    def available_for_stock_activity(self):
+        return self.filter(is_active=True)
+
+
 class Product(models.Model):
     business = models.ForeignKey(Business, on_delete=models.PROTECT, related_name="products")
     name = models.CharField(max_length=120)
@@ -17,6 +22,8 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = ProductQuerySet.as_manager()
 
     class Meta:
         ordering = ("name", "pk")

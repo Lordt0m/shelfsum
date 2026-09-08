@@ -114,6 +114,15 @@ class ProductViewTests(TestCase):
         self.assertNotContains(list_response, other_business.name)
         self.assertEqual(detail_response.status_code, 404)
 
+        edit_response = self.client.post(
+            reverse("product_edit", args=[hidden.pk]), self.product_data(name="Intrusion")
+        )
+        deactivate_response = self.client.post(
+            reverse("product_deactivate", args=[hidden.pk])
+        )
+        self.assertEqual(edit_response.status_code, 404)
+        self.assertEqual(deactivate_response.status_code, 404)
+
     def test_demo_business_rejects_product_creation(self):
         self.business.is_demo = True
         self.business.save(update_fields=["is_demo"])
@@ -122,3 +131,96 @@ class ProductViewTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertFalse(Product.objects.exists())
+
+    def test_permitted_fields_can_be_edited_without_changing_stock(self):
+        product = self.create_existing_product()
+        movement_count = product.stock_movements.count()
+
+        response = self.client.post(
+            reverse("product_edit", args=[product.pk]),
+            {
+                "name": "Golden Penny Pasta",
+                "sku": "GP-PASTA-500",
+                "description": "Updated description",
+                "selling_price": "1300.00",
+                "unit_cost": "1100.00",
+                "low_stock_threshold": "5",
+                "stock_on_hand": "999",
+            },
+        )
+
+        self.assertRedirects(response, reverse("product_detail", args=[product.pk]))
+        product.refresh_from_db()
+        self.assertEqual(product.name, "Golden Penny Pasta")
+        self.assertEqual(product.stock_on_hand, 12)
+        self.assertEqual(product.stock_movements.count(), movement_count)
+
+    def test_price_can_change_while_name_and_sku_stay_the_same(self):
+        product = self.create_existing_product()
+
+        response = self.client.post(
+            reverse("product_edit", args=[product.pk]),
+            {
+                "name": product.name,
+                "sku": product.sku,
+                "description": product.description,
+                "selling_price": "1400.00",
+                "unit_cost": product.unit_cost,
+                "low_stock_threshold": product.low_stock_threshold,
+            },
+        )
+
+        self.assertRedirects(response, reverse("product_detail", args=[product.pk]))
+        product.refresh_from_db()
+        self.assertEqual(product.selling_price, Decimal("1400.00"))
+
+    def test_deactivation_preserves_history_and_excludes_stock_activity_choices(self):
+        product = self.create_existing_product()
+
+        response = self.client.post(reverse("product_deactivate", args=[product.pk]))
+
+        self.assertRedirects(response, reverse("product_detail", args=[product.pk]))
+        product.refresh_from_db()
+        self.assertFalse(product.is_active)
+        self.assertEqual(product.stock_movements.count(), 1)
+        self.assertFalse(Product.objects.available_for_stock_activity().exists())
+
+    def test_search_and_filters_are_combined_within_the_current_business(self):
+        low = self.create_existing_product(
+            name="Peak Milk", sku="PEAK-01", opening_quantity=3, low_stock_threshold=3
+        )
+        high = self.create_existing_product(
+            name="Milo Refill", sku="MILO-02", opening_quantity=8, low_stock_threshold=2
+        )
+        high.is_active = False
+        high.save(update_fields=["is_active"])
+        other_owner = get_user_model().objects.create_user(
+            email="other-filter@example.com", password="password"
+        )
+        other_business = Business.objects.create(name="Other Filter Shop")
+        Membership.objects.create(
+            user=other_owner, business=other_business, role=Membership.Role.OWNER
+        )
+        Product.objects.create(business=other_business, name="Peak Hidden", sku="PEAK-X")
+
+        response = self.client.get(
+            reverse("product_list"), {"q": "peak", "status": "active", "stock": "low"}
+        )
+
+        self.assertContains(response, low.name)
+        self.assertNotContains(response, high.name)
+        self.assertNotContains(response, "Peak Hidden")
+        self.assertContains(response, 'value="peak"')
+        self.assertContains(response, "Low stock")
+
+    def test_inactive_filter_and_no_result_state_are_clear(self):
+        product = self.create_existing_product()
+        product.is_active = False
+        product.save(update_fields=["is_active"])
+
+        inactive = self.client.get(reverse("product_list"), {"status": "inactive"})
+        missing = self.client.get(reverse("product_list"), {"q": "does-not-exist"})
+
+        self.assertContains(inactive, product.name)
+        self.assertContains(inactive, "Inactive")
+        self.assertContains(missing, "No Products match these filters")

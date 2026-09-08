@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Create Product — ShelfSum{% endblock %}
+{% block title %}{{ page_title }} — ShelfSum{% endblock %}
 
 {% block content %}
   <section class="form-shell" aria-labelledby="page-title">
     <p class="eyebrow">Catalogue</p>
-    <h1 id="page-title">Create Product</h1>
-    <p class="form-intro">Opening quantity is recorded as a traceable Stock Adjustment. Stock on Hand cannot be edited directly.</p>
+    <h1 id="page-title">{{ page_title }}</h1>
+    <p class="form-intro">Catalogue details can change, but Stock on Hand cannot be edited directly. New opening quantity is recorded as a traceable Stock Adjustment.</p>
     <form method="post" novalidate>
       {% csrf_token %}
       {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
@@ -18,7 +18,7 @@
           {% if field.errors %}<div class="field-errors" role="alert">{{ field.errors }}</div>{% endif %}
         </div>
       {% endfor %}
-      <button class="button" type="submit">Create Product</button>
+      <button class="button" type="submit">{{ submit_label }}</button>
     </form>
   </section>
 {% endblock %}

@@ -295,7 +295,8 @@ footer p {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -305,8 +306,36 @@ footer p {
   font: inherit;
 }
 
+.filter-bar {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) 1fr 1fr auto;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.filter-bar .field {
+  margin: 0;
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.detail-actions form {
+  margin: 0;
+}
+
+.button-muted {
+  background: var(--muted);
+}
+
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   border-color: var(--accent);
   outline: 3px solid color-mix(in srgb, var(--accent) 20%, transparent);
 }
@@ -482,5 +511,14 @@ footer p {
   .text-link {
     display: block;
     margin: 18px 0 0;
+  }
+
+  .filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

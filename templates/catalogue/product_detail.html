@@ -6,6 +6,10 @@
   <section aria-labelledby="page-title">
     <p class="eyebrow">{% if product.sku %}{{ product.sku }}{% else %}Product{% endif %}</p>
     <h1 id="page-title">{{ product.name }}</h1>
+    <div class="detail-actions">
+      <a class="button" href="{% url 'product_edit' product.pk %}">Edit Product</a>
+      {% if product.is_active %}<form method="post" action="{% url 'product_deactivate' product.pk %}">{% csrf_token %}<button class="button button-muted" type="submit">Deactivate Product</button></form>{% else %}<span class="status">Inactive</span>{% endif %}
+    </div>
     {% if product.description %}<p class="form-intro">{{ product.description }}</p>{% endif %}
     <dl class="business-facts product-facts">
       <div><dt>Stock on Hand</dt><dd>{{ product.stock_on_hand }} units</dd></div>

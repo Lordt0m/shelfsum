@@ -16,6 +16,9 @@ The current application provides the product landing page, a deployment health r
 - A positive opening quantity creates a Stock Adjustment and immutable Stock Movement in the same transaction as the Product and Audit Event.
 - A zero opening quantity creates no meaningless zero movement; the Product begins at zero and its creation remains recorded by an Audit Event.
 - Product pages are resolved inside the current membership's Business and never expose Stock on Hand as an editable field.
+- Approved catalogue details can be edited without changing Stock on Hand or movement history.
+- Deactivated Products keep their history and are excluded from new stock-activity choices.
+- Product search and active/low-stock filters are combined in bookmarkable query parameters; the low-stock boundary is inclusive.
 
 ## Product boundary
 

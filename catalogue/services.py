@@ -22,6 +22,16 @@ class ProductCreation:
     low_stock_threshold: int
 
 
+@dataclass(frozen=True)
+class ProductUpdate:
+    name: str
+    sku: str
+    description: str
+    selling_price: Decimal
+    unit_cost: Decimal
+    low_stock_threshold: int
+
+
 @transaction.atomic
 def create_product(*, business, actor, details):
     ensure_business_write_allowed(business=business, actor=actor)
@@ -58,3 +68,55 @@ def create_product(*, business, actor, details):
         summary=f"Created Product {product.name} with {product.stock_on_hand} units.",
     )
     return product
+
+
+@transaction.atomic
+def update_product(*, business, actor, product, details):
+    ensure_business_write_allowed(business=business, actor=actor)
+    if product.business_id != business.pk:
+        raise ValidationError("The Product does not belong to this Business.")
+    if details.selling_price < 0 or details.unit_cost < 0:
+        raise ValidationError("Product money values cannot be negative.")
+    if details.low_stock_threshold < 0:
+        raise ValidationError("Product quantities cannot be negative.")
+
+    locked_product = Product.objects.select_for_update().get(
+        pk=product.pk, business=business
+    )
+    locked_product.name = details.name
+    locked_product.sku = details.sku
+    locked_product.description = details.description
+    locked_product.selling_price = details.selling_price
+    locked_product.unit_cost = details.unit_cost
+    locked_product.low_stock_threshold = details.low_stock_threshold
+    locked_product.save()
+    record_audit_event(
+        business=business,
+        actor=actor,
+        action="product.updated",
+        affected_object=locked_product,
+        summary=f"Updated catalogue details for Product {locked_product.name}.",
+    )
+    return locked_product
+
+
+@transaction.atomic
+def deactivate_product(*, business, actor, product):
+    ensure_business_write_allowed(business=business, actor=actor)
+    if product.business_id != business.pk:
+        raise ValidationError("The Product does not belong to this Business.")
+    locked_product = Product.objects.select_for_update().get(
+        pk=product.pk, business=business
+    )
+    if not locked_product.is_active:
+        return locked_product
+    locked_product.is_active = False
+    locked_product.save(update_fields=["is_active", "updated_at"])
+    record_audit_event(
+        business=business,
+        actor=actor,
+        action="product.deactivated",
+        affected_object=locked_product,
+        summary=f"Deactivated Product {locked_product.name}.",
+    )
+    return locked_product
