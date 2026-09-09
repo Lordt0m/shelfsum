@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase #{{ purchase.pk }} | ShelfSum{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <p class="eyebrow">Purchase</p>
+  <h1>Purchase #{{ purchase.pk }}</h1>
+  <p>{{ purchase.purchase_date }} · {{ purchase.get_status_display }}</p>
+</section>
+
+{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+
+<dl>
+  <dt>Supplier</dt><dd>{{ purchase.supplier_name|default:"-" }}</dd>
+  <dt>Reference</dt><dd>{{ purchase.reference|default:"-" }}</dd>
+</dl>
+
+<table>
+  <thead><tr><th>Product</th><th>Quantity</th><th>Unit cost</th><th>Total</th></tr></thead>
+  <tbody>
+    {% for line in purchase.lines.all %}
+      <tr><td>{{ line.product.name }}</td><td>{{ line.quantity }}</td><td>{{ line.unit_cost }}</td><td>{{ line.line_total }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p><strong>Total: {{ purchase.total }}</strong></p>
+{% if purchase.status == "draft" %}
+  <p><a class="button" href="{% url 'purchase_edit' purchase.pk %}">Edit draft</a></p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="button" type="submit">Complete Purchase</button>
+  </form>
+{% endif %}
+{% endblock %}

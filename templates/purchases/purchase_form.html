@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{% if purchase %}Edit Purchase{% else %}New Purchase{% endif %} | ShelfSum{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <p class="eyebrow">Purchases</p>
+  <h1>{% if purchase %}Edit Purchase #{{ purchase.pk }}{% else %}New Purchase{% endif %}</h1>
+</section>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {{ form.as_p }}
+
+  <h2>Products</h2>
+  <p>Add one row for each Product. Remove unused rows before saving.</p>
+  {{ formset.management_form }}
+  {{ formset.non_form_errors }}
+  {% for line in formset %}
+    <fieldset>
+      <legend>Product line {{ forloop.counter }}</legend>
+      {{ line.non_field_errors }}
+      {{ line.as_p }}
+      <p>Line total: <output class="line-total">{{ line.line_total|default:line.instance.line_total|default:"0.00" }}</output></p>
+      {% if line.DELETE %}
+        <p>{{ line.DELETE }} <label for="{{ line.DELETE.id_for_label }}">Remove this line</label></p>
+      {% endif %}
+    </fieldset>
+  {% endfor %}
+  <p><strong>Document total: <output id="document-total">{{ formset.total }}</output></strong></p>
+  <button type="submit" name="add_line" value="1" formnovalidate>Add another Product row</button>
+  <button class="button" type="submit">Save draft</button>
+</form>
+<script>
+  (() => {
+    const form = document.querySelector('form');
+    const documentTotal = document.querySelector('#document-total');
+    if (!form || !documentTotal) return;
+    const updateTotals = () => {
+      let total = 0;
+      form.querySelectorAll('fieldset').forEach((fieldSet) => {
+        const quantity = Number(fieldSet.querySelector('[name$="-quantity"]')?.value || 0);
+        const unitCost = Number(fieldSet.querySelector('[name$="-unit_cost"]')?.value || 0);
+        const lineTotal = quantity * unitCost;
+        fieldSet.querySelector('.line-total').textContent = lineTotal.toFixed(2);
+        total += lineTotal;
+      });
+      documentTotal.textContent = total.toFixed(2);
+    };
+    form.addEventListener('input', updateTotals);
+    updateTotals();
+  })();
+</script>
+{% endblock %}

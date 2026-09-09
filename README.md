@@ -2,7 +2,7 @@
 
 ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, Owner-only Business settings, Staff Member management, and Product creation with traceable opening stock. Later vertical slices add Purchases, Sales, Expenses, general Stock Adjustments, reports, an Audit Event browser, fictional demonstration data, and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, Owner-only Business settings, Staff Member management, Product creation with traceable opening stock, and draft-to-completed Purchases. Later vertical slices add Sales, Expenses, general Stock Adjustments, reports, an Audit Event browser, fictional demonstration data, and deployment.
 
 ## Current behaviour
 
@@ -22,6 +22,9 @@ The current application provides the product landing page, a deployment health r
 - Approved catalogue details can be edited without changing Stock on Hand or movement history.
 - Deactivated Products keep their history and are excluded from new stock-activity choices.
 - Product search and active/low-stock filters are combined in bookmarkable query parameters; the low-stock boundary is inclusive.
+- Owners and active Staff Members can draft, edit, filter, and complete multi-line Purchases using server-rendered forms that remain usable without JavaScript.
+- Completing a Purchase deterministically locks its Products, updates Stock on Hand and current unit costs, writes one immutable Purchase-origin Stock Movement per line, and records an Audit Event in one transaction.
+- Completed Purchases and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion; corrections remain reserved for a later explicit reversal workflow.
 
 ## Product boundary
 
@@ -63,7 +66,7 @@ Open `http://127.0.0.1:8000/` for the landing page. The health response is avail
 .\.venv\Scripts\python manage.py test
 ```
 
-Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows will add a separate public service seam when those slices are implemented.
+Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows use focused public service seams, including Product creation and Purchase completion, for exact atomicity and ledger-invariant tests.
 
 The active specification and vertical tickets are kept in [`.scratch/finance-inventory/`](.scratch/finance-inventory/). Product vocabulary and invariants are defined in [`CONTEXT.md`](CONTEXT.md), with consequential technical choices recorded under [`docs/adr/`](docs/adr/).
 
@@ -84,6 +87,7 @@ A later milestone will provide a read-only Demo Business containing only fiction
 - `catalogue` owns Products, their forms and pages, and Product-creation orchestration.
 - `inventory` owns Stock Adjustments, immutable Stock Movements, and locked stock changes.
 - `auditing` owns append-only Audit Events.
+- `purchases` owns draft Purchase entry and the transactional `complete_purchase` seam; Purchase-origin Stock Movements remain in `inventory`.
 
 The public Product-creation service coordinates these modules inside one database transaction, which keeps the code a deployable Django monolith while making rollback behaviour directly testable.
 

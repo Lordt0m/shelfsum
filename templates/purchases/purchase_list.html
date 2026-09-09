@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Purchases | ShelfSum{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <p class="eyebrow">Purchases</p>
+  <h1>Purchase history</h1>
+  <a class="button" href="{% url 'purchase_create' %}">New Purchase</a>
+</section>
+
+<form method="get" class="filter-form">
+  <label for="status">Status</label>
+  <select id="status" name="status">
+    <option value="">All statuses</option>
+    {% for value, label in status_choices %}
+      <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <label>From <input type="date" name="date_from" value="{{ date_from }}"></label>
+  <label>To <input type="date" name="date_to" value="{{ date_to }}"></label>
+  <button type="submit">Filter</button>
+</form>
+{% if filter_error %}<p class="form-error">{{ filter_error }}</p>{% endif %}
+
+{% for purchase in purchases %}
+  <article class="list-row">
+    <a href="{% url 'purchase_detail' purchase.pk %}">Purchase #{{ purchase.pk }}</a>
+    <span>{{ purchase.purchase_date }}</span>
+    <span>{{ purchase.get_status_display }}</span>
+    <span>{{ purchase.total }}</span>
+  </article>
+{% empty %}
+  <p>No Purchases match these filters.</p>
+{% endfor %}
+{% endblock %}
