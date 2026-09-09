@@ -2,13 +2,19 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import TestCase, override_settings
 
 from auditing.models import AuditEvent
 from businesses.models import Business, Membership
 from catalogue.models import Product
-from catalogue.services import ProductCreation, create_product
+from catalogue.services import (
+    ProductCreation,
+    ProductUpdate,
+    create_product,
+    deactivate_product,
+    update_product,
+)
 from inventory.models import StockAdjustment, StockMovement
 
 
@@ -163,3 +169,127 @@ class ProductCreationServiceTests(TestCase):
             AuditEvent.objects.filter(pk=event.pk).update(summary="rewritten")
         with self.assertRaisesRegex(TypeError, "append-only"):
             AuditEvent.objects.filter(pk=event.pk).delete()
+
+    def test_maintenance_actions_record_audit_events(self):
+        product = create_product(
+            business=self.business, actor=self.actor, details=self.details()
+        )
+        update_product(
+            business=self.business,
+            actor=self.actor,
+            product=product,
+            details=ProductUpdate(
+                name="Updated Pasta",
+                sku=product.sku,
+                description=product.description,
+                selling_price=product.selling_price,
+                unit_cost=product.unit_cost,
+                low_stock_threshold=product.low_stock_threshold,
+            ),
+        )
+        deactivate_product(
+            business=self.business, actor=self.actor, product=product
+        )
+
+        events = list(AuditEvent.objects.filter(business=self.business))
+        self.assertEqual(
+            {event.action for event in events},
+            {"product.created", "product.updated", "product.deactivated"},
+        )
+        self.assertTrue(all(event.actor == self.actor for event in events))
+
+    def test_audit_failure_rolls_back_update_and_deactivation(self):
+        product = create_product(
+            business=self.business, actor=self.actor, details=self.details()
+        )
+        original_name = product.name
+        with patch(
+            "catalogue.services.record_audit_event",
+            side_effect=RuntimeError("simulated audit failure"),
+        ):
+            with self.assertRaises(RuntimeError):
+                update_product(
+                    business=self.business,
+                    actor=self.actor,
+                    product=product,
+                    details=ProductUpdate(
+                        name="Should Roll Back",
+                        sku=product.sku,
+                        description=product.description,
+                        selling_price=product.selling_price,
+                        unit_cost=product.unit_cost,
+                        low_stock_threshold=product.low_stock_threshold,
+                    ),
+                )
+            with self.assertRaises(RuntimeError):
+                deactivate_product(
+                    business=self.business, actor=self.actor, product=product
+                )
+
+        product.refresh_from_db()
+        self.assertEqual(product.name, original_name)
+        self.assertTrue(product.is_active)
+
+    def test_demo_business_rejects_maintenance_services_without_side_effects(self):
+        product = create_product(
+            business=self.business, actor=self.actor, details=self.details()
+        )
+        original_name = product.name
+        initial_events = self.business.audit_events.count()
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+
+        with self.assertRaises(PermissionDenied):
+            update_product(
+                business=self.business,
+                actor=self.actor,
+                product=product,
+                details=ProductUpdate(
+                    name="Forbidden Demo Change",
+                    sku=product.sku,
+                    description=product.description,
+                    selling_price=product.selling_price,
+                    unit_cost=product.unit_cost,
+                    low_stock_threshold=product.low_stock_threshold,
+                ),
+            )
+        with self.assertRaises(PermissionDenied):
+            deactivate_product(
+                business=self.business, actor=self.actor, product=product
+            )
+
+        product.refresh_from_db()
+        self.assertEqual(product.name, original_name)
+        self.assertTrue(product.is_active)
+        self.assertEqual(self.business.audit_events.count(), initial_events)
+
+    def test_maintenance_services_reject_a_product_from_another_business(self):
+        other_business = Business.objects.create(name="Other Service Shop")
+        other_product = Product.objects.create(
+            business=other_business, name="Other Product"
+        )
+        initial_events = AuditEvent.objects.count()
+
+        with self.assertRaisesRegex(ValidationError, "does not belong"):
+            update_product(
+                business=self.business,
+                actor=self.actor,
+                product=other_product,
+                details=ProductUpdate(
+                    name="Cross-Business Change",
+                    sku=other_product.sku,
+                    description=other_product.description,
+                    selling_price=other_product.selling_price,
+                    unit_cost=other_product.unit_cost,
+                    low_stock_threshold=other_product.low_stock_threshold,
+                ),
+            )
+        with self.assertRaisesRegex(ValidationError, "does not belong"):
+            deactivate_product(
+                business=self.business, actor=self.actor, product=other_product
+            )
+
+        other_product.refresh_from_db()
+        self.assertEqual(other_product.name, "Other Product")
+        self.assertTrue(other_product.is_active)
+        self.assertEqual(AuditEvent.objects.count(), initial_events)

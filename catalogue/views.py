@@ -66,7 +66,12 @@ def product_create(request):
     return render(
         request,
         "catalogue/product_form.html",
-        {"form": form, "page_title": "Create Product", "submit_label": "Create Product"},
+        {
+            "form": form,
+            "page_title": "Create Product",
+            "submit_label": "Create Product",
+            "intro": "Opening quantity is recorded as a traceable Stock Adjustment. Stock on Hand cannot be edited directly.",
+        },
     )
 
 
@@ -94,7 +99,12 @@ def product_edit(request, product_id):
     return render(
         request,
         "catalogue/product_form.html",
-        {"form": form, "page_title": "Edit Product", "submit_label": "Save changes"},
+        {
+            "form": form,
+            "page_title": "Edit Product",
+            "submit_label": "Save changes",
+            "intro": "Update catalogue details while the Product's Stock on Hand and movement history remain unchanged.",
+        },
     )
 
 

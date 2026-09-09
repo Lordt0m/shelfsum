@@ -32,6 +32,12 @@ class ProductUpdate:
     low_stock_threshold: int
 
 
+def _locked_product_for_business(*, business, product):
+    if product.business_id != business.pk:
+        raise ValidationError("The Product does not belong to this Business.")
+    return Product.objects.select_for_update().get(pk=product.pk, business=business)
+
+
 @transaction.atomic
 def create_product(*, business, actor, details):
     ensure_business_write_allowed(business=business, actor=actor)
@@ -73,15 +79,13 @@ def create_product(*, business, actor, details):
 @transaction.atomic
 def update_product(*, business, actor, product, details):
     ensure_business_write_allowed(business=business, actor=actor)
-    if product.business_id != business.pk:
-        raise ValidationError("The Product does not belong to this Business.")
     if details.selling_price < 0 or details.unit_cost < 0:
         raise ValidationError("Product money values cannot be negative.")
     if details.low_stock_threshold < 0:
         raise ValidationError("Product quantities cannot be negative.")
 
-    locked_product = Product.objects.select_for_update().get(
-        pk=product.pk, business=business
+    locked_product = _locked_product_for_business(
+        business=business, product=product
     )
     locked_product.name = details.name
     locked_product.sku = details.sku
@@ -103,10 +107,8 @@ def update_product(*, business, actor, product, details):
 @transaction.atomic
 def deactivate_product(*, business, actor, product):
     ensure_business_write_allowed(business=business, actor=actor)
-    if product.business_id != business.pk:
-        raise ValidationError("The Product does not belong to this Business.")
-    locked_product = Product.objects.select_for_update().get(
-        pk=product.pk, business=business
+    locked_product = _locked_product_for_business(
+        business=business, product=product
     )
     if not locked_product.is_active:
         return locked_product

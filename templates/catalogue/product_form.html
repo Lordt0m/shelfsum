@@ -6,7 +6,7 @@
   <section class="form-shell" aria-labelledby="page-title">
     <p class="eyebrow">Catalogue</p>
     <h1 id="page-title">{{ page_title }}</h1>
-    <p class="form-intro">Catalogue details can change, but Stock on Hand cannot be edited directly. New opening quantity is recorded as a traceable Stock Adjustment.</p>
+    <p class="form-intro">{{ intro }}</p>
     <form method="post" novalidate>
       {% csrf_token %}
       {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}

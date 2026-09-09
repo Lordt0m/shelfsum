@@ -6,8 +6,11 @@ from businesses.models import Business
 
 
 class ProductQuerySet(models.QuerySet):
-    def available_for_stock_activity(self):
-        return self.filter(is_active=True)
+    def for_business(self, business):
+        return self.filter(business=business)
+
+    def available_for_stock_activity(self, *, business):
+        return self.for_business(business).filter(is_active=True)
 
 
 class Product(models.Model):

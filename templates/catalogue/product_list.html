@@ -24,7 +24,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state">{% if query or status != "active" or stock != "all" %}No Products match these filters.{% else %}No Products yet. Create the first Product to begin a traceable stock record.{% endif %}</p>
+      <p class="empty-state">{% if stock == "low" %}No Products match the low-stock filter.{% elif query or status != "active" %}No Products match these filters.{% else %}No Products yet. Create the first Product to begin a traceable stock record.{% endif %}</p>
     {% endif %}
   </section>
 {% endblock %}

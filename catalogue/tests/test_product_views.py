@@ -183,7 +183,10 @@ class ProductViewTests(TestCase):
         product.refresh_from_db()
         self.assertFalse(product.is_active)
         self.assertEqual(product.stock_movements.count(), 1)
-        self.assertFalse(Product.objects.available_for_stock_activity().exists())
+        other_business = Business.objects.create(name="Other Choice Shop")
+        Product.objects.create(business=other_business, name="Other Active Product")
+        choices = Product.objects.available_for_stock_activity(business=self.business)
+        self.assertFalse(choices.exists())
 
     def test_search_and_filters_are_combined_within_the_current_business(self):
         low = self.create_existing_product(
@@ -224,3 +227,31 @@ class ProductViewTests(TestCase):
         self.assertContains(inactive, product.name)
         self.assertContains(inactive, "Inactive")
         self.assertContains(missing, "No Products match these filters")
+
+    def test_low_stock_filter_has_a_specific_empty_state(self):
+        self.create_existing_product(opening_quantity=8, low_stock_threshold=2)
+
+        response = self.client.get(reverse("product_list"), {"stock": "low"})
+
+        self.assertContains(response, "No Products match the low-stock filter")
+
+    def test_demo_business_rejects_product_edit_and_deactivation(self):
+        product = self.create_existing_product()
+        initial_events = self.business.audit_events.count()
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+
+        edit_response = self.client.post(
+            reverse("product_edit", args=[product.pk]),
+            self.product_data(name="Changed Demo Product"),
+        )
+        deactivate_response = self.client.post(
+            reverse("product_deactivate", args=[product.pk])
+        )
+
+        self.assertEqual(edit_response.status_code, 403)
+        self.assertEqual(deactivate_response.status_code, 403)
+        product.refresh_from_db()
+        self.assertEqual(product.name, "Golden Penny Spaghetti")
+        self.assertTrue(product.is_active)
+        self.assertEqual(self.business.audit_events.count(), initial_events)
