@@ -49,4 +49,4 @@ Payments, invoicing, payroll, tax accounting, multicurrency, fractional quantiti
 
 ## Tickets
 
-Numbered implementation tickets live in `.scratch/finance-inventory/issues/`. They are executed in dependency order unless a ticket explicitly states otherwise.
+Numbered implementation tickets live in `.scratch/finance-inventory/issues/` and are the sole mutable delivery plan. They are executed in dependency order unless a ticket explicitly states otherwise. Every completed ticket retains the concise proof and handoff record required by `docs/agents/issue-tracker.md` so the repository can be resumed without private programme context.

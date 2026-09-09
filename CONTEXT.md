@@ -42,12 +42,3 @@ An append-only record of who performed a consequential action and when.
 
 **Demo Business**  
 A read-only fictional Business that visitors can inspect without changing shared demonstration data.
-
-## Core invariants
-
-- Every Business-owned query is scoped through the authenticated person's membership before a supplied identifier is resolved.
-- Stock on Hand equals the net effect of that Product's Stock Movements.
-- Completing a Purchase or Sale creates its Stock Movements atomically.
-- Completed stock-affecting records are not edited or deleted; corrections use explicit reversal behaviour.
-- Money uses decimal arithmetic and quantities use whole numbers in the first release.
-- The Demo Business is read-only at the server boundary.

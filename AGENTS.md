@@ -5,6 +5,7 @@
 - Issue tracker: local Markdown files under `.scratch/`. Read `docs/agents/issue-tracker.md` before creating, updating, or closing tickets.
 - Triage labels: use the canonical statuses in `docs/agents/triage-labels.md`.
 - Domain documentation: read `CONTEXT.md` and relevant records under `docs/adr/` before changing product behaviour. See `docs/agents/domain.md`.
+- Module boundaries and invariant owners: read `docs/agents/module-map.md` before changing a cross-module workflow.
 
 ## Product boundary
 
@@ -18,6 +19,9 @@ Keep the application focused on the accepted MVP. Payments, payroll, tax, multic
 - Work in one vertical ticket at a time: understand, inspect, plan, write one failing behaviour test, implement the smallest passing slice, verify, review against standards and the ticket, explain, then commit.
 - Keep public claims evidence-backed. A feature is complete only when its behaviour, tests, documentation, and demonstration state agree.
 - Use small truthful commits and preserve unrelated work.
+- Treat this repository's `CONTEXT.md`, ADRs, implementation specification, and tickets as the sole mutable ShelfSum delivery plan. Private programme documents may point here but do not override it.
+- End each ticket with a concise completion record containing the public ref, proof actually run, review and repairs, documentation/demo impact, remaining risks, and next dependency.
+- When work is delegated, give the worker only the active ticket, relevant guidance/ADRs, changed files, exact checks, and a clear write-or-review boundary.
 
 ## Commands
 
@@ -46,3 +50,4 @@ Keep the application focused on the accepted MVP. Payments, payroll, tax, multic
 - Run `manage.py check` and the complete test suite before review.
 - Review changes against this file and the active ticket before committing.
 - Document commands only after executing them successfully from a clean-enough local state.
+- Require an independent fresh-context review for permission, Business isolation, Demo write protection, stock integrity, transaction, migration, and release-sensitive changes.
