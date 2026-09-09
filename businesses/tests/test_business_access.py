@@ -1,8 +1,12 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from unittest.mock import patch
 
+from auditing.models import AuditEvent
 from businesses.models import Business, Membership
+from businesses.services import MembershipAssignmentError, add_staff_member, deactivate_staff_member
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
@@ -122,3 +126,235 @@ class BusinessAccessTests(TestCase):
         self.assertContains(response, "read-only", status_code=403)
         self.business.refresh_from_db()
         self.assertEqual(self.business.name, "Balogun Corner Shop")
+
+
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class StaffMembershipTests(TestCase):
+    def setUp(self):
+        self.owner = get_user_model().objects.create_user(
+            email="owner@example.com", password="safe-password-123"
+        )
+        self.staff = get_user_model().objects.create_user(
+            email="staff@example.com", password="safe-password-123"
+        )
+        self.business = Business.objects.create(name="Balogun Corner Shop")
+        Membership.objects.create(
+            user=self.owner, business=self.business, role=Membership.Role.OWNER
+        )
+        self.client.force_login(self.owner)
+
+    def test_owner_can_add_an_unassigned_registered_staff_member(self):
+        response = self.client.post(reverse("staff_member_add"), {"email": self.staff.email})
+
+        membership = Membership.objects.get(user=self.staff)
+        self.assertRedirects(response, reverse("staff_member_list"))
+        self.assertEqual(membership.business, self.business)
+        self.assertEqual(membership.role, Membership.Role.STAFF)
+        self.assertTrue(membership.is_active)
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                business=self.business,
+                actor=self.owner,
+                action="membership.staff_added",
+                object_identifier=str(membership.pk),
+            ).exists()
+        )
+
+    def test_add_staff_member_rejects_unknown_owner_duplicate_and_assigned_users(self):
+        other_owner = get_user_model().objects.create_user(
+            email="other-owner@example.com", password="safe-password-123"
+        )
+        other_business = Business.objects.create(name="Other Shop")
+        Membership.objects.create(
+            user=other_owner, business=other_business, role=Membership.Role.OWNER
+        )
+        Membership.objects.create(
+            user=self.staff, business=self.business, role=Membership.Role.STAFF
+        )
+
+        cases = (
+            ("missing@example.com", "No registered user has that email address."),
+            (self.owner.email, "You cannot add yourself as a Staff Member."),
+            (self.staff.email, "That user already belongs to this Business."),
+            (other_owner.email, "That user is already assigned to another Business."),
+        )
+        for email, error in cases:
+            with self.subTest(email=email):
+                response = self.client.post(reverse("staff_member_add"), {"email": email})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, error)
+
+    def test_owner_can_list_and_deactivate_staff_without_losing_audit_attribution(self):
+        membership = Membership.objects.create(
+            user=self.staff, business=self.business, role=Membership.Role.STAFF
+        )
+        AuditEvent.objects.create(
+            business=self.business,
+            actor=self.staff,
+            action="product_created",
+            object_type="catalogue.Product",
+            object_identifier="1",
+            summary="Created a Product.",
+        )
+
+        list_response = self.client.get(reverse("staff_member_list"))
+        response = self.client.post(reverse("staff_member_deactivate", args=[membership.pk]))
+
+        self.assertContains(list_response, self.staff.email)
+        self.assertRedirects(response, reverse("staff_member_list"))
+        membership.refresh_from_db()
+        self.assertFalse(membership.is_active)
+        self.assertTrue(AuditEvent.objects.filter(actor=self.staff).exists())
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                action="membership.staff_deactivated", object_identifier=str(membership.pk)
+            ).exists()
+        )
+
+    def test_deactivated_staff_member_loses_business_access_immediately(self):
+        membership = Membership.objects.create(
+            user=self.staff, business=self.business, role=Membership.Role.STAFF
+        )
+        self.client.post(reverse("staff_member_deactivate", args=[membership.pk]))
+
+        self.client.force_login(self.staff)
+        for url in (reverse("business_home"), reverse("product_list")):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 403)
+                self.assertContains(response, "access is inactive", status_code=403)
+
+    def test_staff_cannot_manage_business_settings_or_memberships(self):
+        another_staff = get_user_model().objects.create_user(
+            email="another-staff@example.com", password="safe-password-123"
+        )
+        Membership.objects.create(
+            user=self.staff, business=self.business, role=Membership.Role.STAFF
+        )
+        another_membership = Membership.objects.create(
+            user=another_staff, business=self.business, role=Membership.Role.STAFF
+        )
+        self.client.force_login(self.staff)
+
+        home_response = self.client.get(reverse("business_home"))
+        for url in (reverse("business_settings"), reverse("staff_member_list")):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+        add_response = self.client.post(reverse("staff_member_add"), {"email": self.owner.email})
+        deactivate_response = self.client.post(
+            reverse("staff_member_deactivate", args=[another_membership.pk])
+        )
+        self.assertEqual(add_response.status_code, 403)
+        self.assertEqual(deactivate_response.status_code, 403)
+        self.assertNotContains(home_response, "Business settings")
+        self.assertNotContains(home_response, "Staff Members")
+        self.assertTrue(another_membership.is_active)
+        self.assertEqual(Membership.objects.filter(business=self.business).count(), 3)
+
+    def test_demo_business_rejects_membership_writes_at_request_boundary(self):
+        existing_membership = Membership.objects.create(
+            user=self.staff, business=self.business, role=Membership.Role.STAFF
+        )
+        unassigned_user = get_user_model().objects.create_user(
+            email="unassigned@example.com", password="safe-password-123"
+        )
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+
+        add_response = self.client.post(
+            reverse("staff_member_add"), {"email": unassigned_user.email}
+        )
+        deactivate_response = self.client.post(
+            reverse("staff_member_deactivate", args=[existing_membership.pk])
+        )
+
+        self.assertEqual(add_response.status_code, 403)
+        self.assertContains(add_response, "read-only", status_code=403)
+        self.assertEqual(deactivate_response.status_code, 403)
+        existing_membership.refresh_from_db()
+        self.assertTrue(existing_membership.is_active)
+        self.assertFalse(Membership.objects.filter(user=unassigned_user).exists())
+
+    def test_membership_identifiers_are_scoped_to_the_owners_business(self):
+        other_owner = get_user_model().objects.create_user(
+            email="other-owner@example.com", password="safe-password-123"
+        )
+        other_staff = get_user_model().objects.create_user(
+            email="other-staff@example.com", password="safe-password-123"
+        )
+        other_business = Business.objects.create(name="Other Shop")
+        Membership.objects.create(
+            user=other_owner, business=other_business, role=Membership.Role.OWNER
+        )
+        hidden_membership = Membership.objects.create(
+            user=other_staff, business=other_business, role=Membership.Role.STAFF
+        )
+
+        response = self.client.post(
+            reverse("staff_member_deactivate", args=[hidden_membership.pk])
+        )
+
+        self.assertEqual(response.status_code, 404)
+        hidden_membership.refresh_from_db()
+        self.assertTrue(hidden_membership.is_active)
+
+    def test_services_enforce_owner_demo_and_business_boundaries(self):
+        owner_membership = Membership.objects.get(user=self.owner)
+        staff_membership = Membership.objects.create(
+            user=self.staff, business=self.business, role=Membership.Role.STAFF
+        )
+        unassigned_user = get_user_model().objects.create_user(
+            email="unassigned@example.com", password="safe-password-123"
+        )
+        other_business = Business.objects.create(name="Other Shop")
+
+        with self.assertRaises(PermissionDenied):
+            add_staff_member(business=self.business, actor=self.staff, email="missing@example.com")
+        with self.assertRaises(PermissionDenied):
+            deactivate_staff_member(
+                business=other_business, actor=self.owner, membership=staff_membership
+            )
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+        with self.assertRaises(PermissionDenied):
+            add_staff_member(
+                business=self.business, actor=self.owner, email=unassigned_user.email
+            )
+        with self.assertRaises(PermissionDenied):
+            deactivate_staff_member(
+                business=self.business, actor=self.owner, membership=staff_membership
+            )
+        self.assertTrue(owner_membership.is_active)
+        self.assertFalse(Membership.objects.filter(user=unassigned_user).exists())
+        self.assertFalse(AuditEvent.objects.filter(business=self.business).exists())
+
+    def test_add_staff_member_rolls_back_when_auditing_fails(self):
+        with patch(
+            "businesses.services.record_audit_event",
+            side_effect=RuntimeError("audit unavailable"),
+        ):
+            with self.assertRaises(RuntimeError):
+                add_staff_member(
+                    business=self.business, actor=self.owner, email=self.staff.email
+                )
+
+        self.assertFalse(Membership.objects.filter(user=self.staff).exists())
+        self.assertFalse(AuditEvent.objects.filter(business=self.business).exists())
+
+    def test_deactivate_staff_member_rolls_back_when_auditing_fails(self):
+        membership = Membership.objects.create(
+            user=self.staff, business=self.business, role=Membership.Role.STAFF
+        )
+
+        with patch(
+            "businesses.services.record_audit_event",
+            side_effect=RuntimeError("audit unavailable"),
+        ):
+            with self.assertRaises(RuntimeError):
+                deactivate_staff_member(
+                    business=self.business, actor=self.owner, membership=membership
+                )
+
+        membership.refresh_from_db()
+        self.assertTrue(membership.is_active)
+        self.assertFalse(AuditEvent.objects.filter(business=self.business).exists())

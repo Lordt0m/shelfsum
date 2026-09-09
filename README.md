@@ -2,7 +2,7 @@
 
 ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, Owner-only Business settings, and Product creation with traceable opening stock. Later vertical slices add catalogue maintenance, Staff Member management, Purchases, Sales, Expenses, general Stock Adjustments, reports, an Audit Event browser, fictional demonstration data, and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, Owner-only Business settings, Staff Member management, and Product creation with traceable opening stock. Later vertical slices add Purchases, Sales, Expenses, general Stock Adjustments, reports, an Audit Event browser, fictional demonstration data, and deployment.
 
 ## Current behaviour
 
@@ -11,6 +11,9 @@ The current application provides the product landing page, a deployment health r
 - A newly registered person creates one Business and becomes its Owner.
 - The database and request boundary prevent one person from belonging to a second Business.
 - Business settings are available only to the Owner; Staff Member requests are rejected on the server.
+- An Owner can add an already registered, unassigned person as a Staff Member by email, then list or deactivate Staff Members.
+- Membership changes are Owner-only, Business-scoped, audited, and unavailable for the read-only Demo Business.
+- Deactivation retains the person and their Audit Event attribution while immediately blocking their Business access.
 - Password changes and POST-only sign-out use Django's authenticated session flow.
 - Product names and non-empty SKUs are case-insensitively unique inside one Business and reusable by another Business.
 - A positive opening quantity creates a Stock Adjustment and immutable Stock Movement in the same transaction as the Product and Audit Event.

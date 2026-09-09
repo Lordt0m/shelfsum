@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from businesses.access import (
     demo_business_read_only,
@@ -11,8 +11,13 @@ from businesses.access import (
     membership_required,
     owner_required,
 )
-from businesses.forms import BusinessForm
+from businesses.forms import BusinessForm, StaffMemberForm
 from businesses.models import Business, Membership
+from businesses.services import (
+    MembershipAssignmentError,
+    add_staff_member,
+    deactivate_staff_member,
+)
 
 
 @login_required
@@ -69,3 +74,51 @@ def business_settings(request):
         "businesses/settings.html",
         {"form": form, "business": request.business},
     )
+
+
+@owner_required
+def staff_member_list(request):
+    staff_members = Membership.objects.filter(
+        business=request.business, role=Membership.Role.STAFF
+    ).select_related("user")
+    return render(
+        request,
+        "businesses/staff_member_list.html",
+        {"staff_members": staff_members, "business": request.business},
+    )
+
+
+@owner_required
+@demo_business_read_only
+def staff_member_add(request):
+    form = StaffMemberForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            add_staff_member(
+                business=request.business,
+                actor=request.user,
+                email=form.cleaned_data["email"],
+            )
+        except MembershipAssignmentError as error:
+            form.add_error("email", error)
+        else:
+            messages.success(request, "Staff Member added.")
+            return redirect("staff_member_list")
+    return render(request, "businesses/staff_member_add.html", {"form": form})
+
+
+@owner_required
+@demo_business_read_only
+def staff_member_deactivate(request, membership_id):
+    membership = get_object_or_404(
+        Membership.objects.select_related("user"),
+        pk=membership_id,
+        business=request.business,
+        role=Membership.Role.STAFF,
+    )
+    if request.method == "POST":
+        deactivate_staff_member(
+            business=request.business, actor=request.user, membership=membership
+        )
+        messages.success(request, "Staff Member deactivated.")
+    return redirect("staff_member_list")

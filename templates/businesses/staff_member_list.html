@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Members — ShelfSum{% endblock %}
+
+{% block content %}
+  <section aria-labelledby="page-title">
+    <div class="page-heading">
+      <div><p class="eyebrow">Owner controls</p><h1 id="page-title">Staff Members</h1></div>
+      <a class="button" href="{% url 'staff_member_add' %}">Add Staff Member</a>
+    </div>
+    {% if staff_members %}
+      <div class="record-list">
+        {% for membership in staff_members %}
+          <div class="record-row">
+            <span><strong>{{ membership.user.email }}</strong><small>{% if membership.is_active %}Active{% else %}Inactive{% endif %}</small></span>
+            {% if membership.is_active %}<form method="post" action="{% url 'staff_member_deactivate' membership.pk %}">{% csrf_token %}<button class="button button-muted" type="submit">Deactivate</button></form>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state">No Staff Members yet. Add someone who already has a ShelfSum account.</p>
+    {% endif %}
+  </section>
+{% endblock %}

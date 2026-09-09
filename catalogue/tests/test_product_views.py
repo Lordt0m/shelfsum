@@ -255,3 +255,94 @@ class ProductViewTests(TestCase):
         self.assertEqual(product.name, "Golden Penny Spaghetti")
         self.assertTrue(product.is_active)
         self.assertEqual(self.business.audit_events.count(), initial_events)
+
+    def test_active_staff_member_can_use_every_current_product_endpoint(self):
+        staff = get_user_model().objects.create_user(
+            email="staff@example.com", password="password"
+        )
+        Membership.objects.create(
+            user=staff, business=self.business, role=Membership.Role.STAFF
+        )
+        product = self.create_existing_product()
+        self.client.force_login(staff)
+
+        list_response = self.client.get(reverse("product_list"))
+        detail_response = self.client.get(reverse("product_detail", args=[product.pk]))
+        create_response = self.client.post(
+            reverse("product_create"),
+            self.product_data(name="Staff Product", sku="STAFF-01"),
+        )
+        edit_response = self.client.post(
+            reverse("product_edit", args=[product.pk]),
+            self.product_data(name="Staff Updated Product", sku="STAFF-02"),
+        )
+        deactivate_response = self.client.post(
+            reverse("product_deactivate", args=[product.pk])
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(detail_response.status_code, 200)
+        created_product = Product.objects.get(name="Staff Product")
+        self.assertRedirects(
+            create_response, reverse("product_detail", args=[created_product.pk])
+        )
+        self.assertRedirects(edit_response, reverse("product_detail", args=[product.pk]))
+        self.assertRedirects(
+            deactivate_response, reverse("product_detail", args=[product.pk])
+        )
+        product.refresh_from_db()
+        self.assertEqual(product.name, "Staff Updated Product")
+        self.assertFalse(product.is_active)
+
+    def test_staff_member_cannot_use_cross_business_product_identifiers(self):
+        staff = get_user_model().objects.create_user(
+            email="staff@example.com", password="password"
+        )
+        Membership.objects.create(
+            user=staff, business=self.business, role=Membership.Role.STAFF
+        )
+        other_business = Business.objects.create(name="Other Shop")
+        hidden = Product.objects.create(
+            business=other_business, name="Hidden Product", sku="HIDDEN-01"
+        )
+        self.client.force_login(staff)
+
+        responses = (
+            self.client.get(reverse("product_detail", args=[hidden.pk])),
+            self.client.post(
+                reverse("product_edit", args=[hidden.pk]),
+                self.product_data(name="Intrusion", sku="INTRUSION-01"),
+            ),
+            self.client.post(reverse("product_deactivate", args=[hidden.pk])),
+        )
+
+        for response in responses:
+            self.assertEqual(response.status_code, 404)
+        hidden.refresh_from_db()
+        self.assertTrue(hidden.is_active)
+
+    def test_deactivated_staff_member_is_denied_every_current_product_endpoint(self):
+        staff = get_user_model().objects.create_user(
+            email="staff@example.com", password="password"
+        )
+        membership = Membership.objects.create(
+            user=staff, business=self.business, role=Membership.Role.STAFF
+        )
+        product = self.create_existing_product()
+        membership.is_active = False
+        membership.save(update_fields=["is_active"])
+        self.client.force_login(staff)
+
+        requests = (
+            lambda: self.client.get(reverse("product_list")),
+            lambda: self.client.get(reverse("product_detail", args=[product.pk])),
+            lambda: self.client.post(reverse("product_create"), self.product_data()),
+            lambda: self.client.post(
+                reverse("product_edit", args=[product.pk]), self.product_data()
+            ),
+            lambda: self.client.post(reverse("product_deactivate", args=[product.pk])),
+        )
+        for request in requests:
+            response = request()
+            self.assertEqual(response.status_code, 403)
+            self.assertContains(response, "access is inactive", status_code=403)

@@ -22,5 +22,6 @@ Use this map to find the owner of a boundary. Keep interfaces small: callers pro
 | IF-03 | `catalogue` -> `inventory` | Create opening stock only through the stock-adjustment service. | Matching Business and Product; valid whole quantity | Atomic rollback, no negative stock, immutable trace | `catalogue/services.py`, `inventory/services.py` |
 | IF-04 | domain service -> `auditing` | Record each consequential change inside the same transaction. | A valid changed object and actor | Audit failure rolls back the whole operation | `auditing/services.py` |
 | IF-05 | catalogue view -> Product queryset | List, lookup, search, and stock-activity availability remain Business-scoped. | Current Business is explicit | Cross-Business records never appear | `catalogue/models.py`, `catalogue/views.py` |
+| IF-06 | Owner membership views -> `businesses.services` | Add or deactivate Staff Members atomically with an Audit Event while preserving one-Business membership. | Active Owner, current Business, registered unassigned target | Owner, Demo, duplicate, assignment, and cross-Business denial tests | `businesses/services.py`, `businesses/views.py` |
 
 Update this file only when ownership, a public seam, or an invariant changes. Implementation detail that does not affect callers belongs in code and tests.
