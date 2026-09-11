@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{% if sale %}Edit Sale{% else %}New Sale{% endif %} | ShelfSum{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">Sales</p><h1>{% if sale %}Edit Sale #{{ sale.pk }}{% else %}New Sale{% endif %}</h1></section>
+<form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.as_p }}<h2>Products</h2><p>Add one row for each Product. Remove unused rows before saving.</p>{{ formset.management_form }}{{ formset.non_form_errors }}{% for line in formset %}<fieldset><legend>Product line {{ forloop.counter }}</legend>{{ line.non_field_errors }}{{ line.as_p }}<p>Line total: <output class="line-total">{{ line.line_total|default:line.instance.line_total|default:"0.00" }}</output></p>{% if line.DELETE %}<p>{{ line.DELETE }} <label for="{{ line.DELETE.id_for_label }}">Remove this line</label></p>{% endif %}</fieldset>{% endfor %}<p><strong>Document total: <output id="document-total">{{ formset.total }}</output></strong></p><button type="submit" name="add_line" value="1" formnovalidate>Add another Product row</button> <button class="button" type="submit">Save draft</button></form>
+<script>
+(() => { const form=document.querySelector('form'), total=document.querySelector('#document-total'); if(!form||!total)return; const update=()=>{let sum=0; form.querySelectorAll('fieldset').forEach(f=>{const q=Number(f.querySelector('[name$="-quantity"]')?.value||0), p=Number(f.querySelector('[name$="-unit_price"]')?.value||0), t=q*p; f.querySelector('.line-total').textContent=t.toFixed(2); sum+=t;}); total.textContent=sum.toFixed(2);}; form.addEventListener('input',update); update(); })();
+</script>
+{% endblock %}

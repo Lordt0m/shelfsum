@@ -2,7 +2,7 @@
 
 ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, Owner-only Business settings, Staff Member management, Product creation with traceable opening stock, and draft-to-completed Purchases. Later vertical slices add Sales, Expenses, general Stock Adjustments, reports, an Audit Event browser, fictional demonstration data, and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, Owner-only Business settings, Staff Member management, Product creation with traceable opening stock, and draft-to-completed Purchases and Sales. Later vertical slices add Expenses, general Stock Adjustments, reports, an Audit Event browser, fictional demonstration data, and deployment.
 
 ## Current behaviour
 
@@ -25,6 +25,9 @@ The current application provides the product landing page, a deployment health r
 - Owners and active Staff Members can draft, edit, filter, and complete multi-line Purchases using server-rendered forms that remain usable without JavaScript.
 - Completing a Purchase deterministically locks its Products, updates Stock on Hand and current unit costs, writes one immutable Purchase-origin Stock Movement per line, and records an Audit Event in one transaction.
 - Completed Purchases and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion; corrections remain reserved for a later explicit reversal workflow.
+- Owners and active Staff Members can draft, edit, list, filter, inspect, and complete multi-line Sales using server-rendered forms that remain usable without JavaScript.
+- Completing a Sale deterministically locks its Products, rechecks Stock on Hand, snapshots each Product cost on its Sale line, decreases stock, writes one immutable Sale-origin Stock Movement per line, and records an Audit Event in one transaction.
+- Completed Sales and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion; corrections remain reserved for a later explicit reversal workflow.
 
 ## Product boundary
 
@@ -66,7 +69,7 @@ Open `http://127.0.0.1:8000/` for the landing page. The health response is avail
 .\.venv\Scripts\python manage.py test
 ```
 
-Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows use focused public service seams, including Product creation and Purchase completion, for exact atomicity and ledger-invariant tests.
+Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows use focused public service seams, including Product creation, Purchase completion, and Sale completion, for exact atomicity and ledger-invariant tests.
 
 The active specification and vertical tickets are kept in [`.scratch/finance-inventory/`](.scratch/finance-inventory/). Product vocabulary and invariants are defined in [`CONTEXT.md`](CONTEXT.md), with consequential technical choices recorded under [`docs/adr/`](docs/adr/).
 
@@ -88,6 +91,7 @@ A later milestone will provide a read-only Demo Business containing only fiction
 - `inventory` owns Stock Adjustments, immutable Stock Movements, and locked stock changes.
 - `auditing` owns append-only Audit Events.
 - `purchases` owns draft Purchase entry and the transactional `complete_purchase` seam; Purchase-origin Stock Movements remain in `inventory`.
+- `sales` owns draft Sale entry and the transactional `complete_sale` seam; Sale-origin Stock Movements remain in `inventory`.
 
 The public Product-creation service coordinates these modules inside one database transaction, which keeps the code a deployable Django monolith while making rollback behaviour directly testable.
 

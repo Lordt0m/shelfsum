@@ -47,6 +47,7 @@ class StockMovement(ImmutableModel):
     class Kind(models.TextChoices):
         ADJUSTMENT = "adjustment", "Stock Adjustment"
         PURCHASE = "purchase", "Purchase"
+        SALE = "sale", "Sale"
 
     business = models.ForeignKey(Business, on_delete=models.PROTECT, related_name="stock_movements")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="stock_movements")
@@ -61,6 +62,13 @@ class StockMovement(ImmutableModel):
     )
     purchase_line = models.OneToOneField(
         "purchases.PurchaseLine",
+        on_delete=models.PROTECT,
+        related_name="movement",
+        null=True,
+        blank=True,
+    )
+    sale_line = models.OneToOneField(
+        "sales.SaleLine",
         on_delete=models.PROTECT,
         related_name="movement",
         null=True,
@@ -83,11 +91,19 @@ class StockMovement(ImmutableModel):
                         kind="adjustment",
                         stock_adjustment__isnull=False,
                         purchase_line__isnull=True,
+                        sale_line__isnull=True,
                     )
                     | Q(
                         kind="purchase",
                         stock_adjustment__isnull=True,
                         purchase_line__isnull=False,
+                        sale_line__isnull=True,
+                    )
+                    | Q(
+                        kind="sale",
+                        stock_adjustment__isnull=True,
+                        purchase_line__isnull=True,
+                        sale_line__isnull=False,
                     )
                 ),
                 name="stock_movement_has_matching_origin",
@@ -108,6 +124,8 @@ class StockMovement(ImmutableModel):
                     "stock_adjustment",
                     "Purchase movements cannot also reference a Stock Adjustment.",
                 )
+            if self.sale_line_id is not None:
+                add_error("sale_line", "Purchase movements cannot also reference a Sale line.")
             if self.purchase_line_id is not None:
                 try:
                     purchase_line = self.purchase_line
@@ -135,6 +153,31 @@ class StockMovement(ImmutableModel):
                             "quantity_change",
                             "Purchase movement quantity must match its Purchase line.",
                         )
+        elif self.kind == self.Kind.SALE:
+            if self.sale_line_id is None:
+                add_error("sale_line", "Sale movements require a Sale line.")
+            if self.stock_adjustment_id is not None or self.purchase_line_id is not None:
+                add_error("sale_line", "Sale movements cannot also reference another origin.")
+            if self.sale_line_id is not None:
+                try:
+                    sale_line_model = self._meta.get_field("sale_line").related_model
+                    sale_line = sale_line_model.objects.select_related("sale").get(
+                        pk=self.sale_line_id
+                    )
+                except self._meta.get_field("sale_line").related_model.DoesNotExist:
+                    add_error("sale_line", "Sale line does not exist.")
+                else:
+                    # Check persisted line values and parent state rather than
+                    # a caller-supplied related-object cache.
+                    sale = sale_line.sale
+                    if sale.status != sale.Status.COMPLETED:
+                        add_error("sale_line", "Sale movements require a completed Sale.")
+                    if self.business_id != sale.business_id:
+                        add_error("business", "Sale movement Business must match its Sale.")
+                    if self.product_id != sale_line.product_id:
+                        add_error("product", "Sale movement Product must match its Sale line.")
+                    if self.quantity_change != -sale_line.quantity:
+                        add_error("quantity_change", "Sale movement quantity must match its Sale line.")
         elif self.kind == self.Kind.ADJUSTMENT:
             if self.stock_adjustment_id is None:
                 add_error(
@@ -144,6 +187,11 @@ class StockMovement(ImmutableModel):
                 add_error(
                     "purchase_line",
                     "Adjustment movements cannot also reference a Purchase line.",
+                )
+            if self.sale_line_id is not None:
+                add_error(
+                    "sale_line",
+                    "Adjustment movements cannot also reference a Sale line.",
                 )
             if self.stock_adjustment_id is not None:
                 try:

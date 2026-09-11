@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "core",
     "inventory",
     "purchases",
+    "sales",
 ]
 
 MIDDLEWARE = [

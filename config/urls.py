@@ -10,5 +10,6 @@ urlpatterns = [
     path("business/", include("businesses.urls")),
     path("products/", include("catalogue.urls")),
     path("purchases/", include("purchases.urls")),
+    path("sales/", include("sales.urls")),
     path("admin/", admin.site.urls),
 ]
