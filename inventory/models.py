@@ -48,6 +48,7 @@ class StockMovement(ImmutableModel):
         ADJUSTMENT = "adjustment", "Stock Adjustment"
         PURCHASE = "purchase", "Purchase"
         SALE = "sale", "Sale"
+        REVERSAL = "reversal", "Reversal"
 
     business = models.ForeignKey(Business, on_delete=models.PROTECT, related_name="stock_movements")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="stock_movements")
@@ -74,6 +75,13 @@ class StockMovement(ImmutableModel):
         null=True,
         blank=True,
     )
+    reversal_of = models.OneToOneField(
+        "self",
+        on_delete=models.PROTECT,
+        related_name="reversal",
+        null=True,
+        blank=True,
+    )
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -92,18 +100,28 @@ class StockMovement(ImmutableModel):
                         stock_adjustment__isnull=False,
                         purchase_line__isnull=True,
                         sale_line__isnull=True,
+                        reversal_of__isnull=True,
                     )
                     | Q(
                         kind="purchase",
                         stock_adjustment__isnull=True,
                         purchase_line__isnull=False,
                         sale_line__isnull=True,
+                        reversal_of__isnull=True,
                     )
                     | Q(
                         kind="sale",
                         stock_adjustment__isnull=True,
                         purchase_line__isnull=True,
                         sale_line__isnull=False,
+                        reversal_of__isnull=True,
+                    )
+                    | Q(
+                        kind="reversal",
+                        stock_adjustment__isnull=True,
+                        purchase_line__isnull=True,
+                        sale_line__isnull=True,
+                        reversal_of__isnull=False,
                     )
                 ),
                 name="stock_movement_has_matching_origin",
@@ -126,9 +144,14 @@ class StockMovement(ImmutableModel):
                 )
             if self.sale_line_id is not None:
                 add_error("sale_line", "Purchase movements cannot also reference a Sale line.")
+            if self.reversal_of_id is not None:
+                add_error("reversal_of", "Purchase movements cannot reference a reversal origin.")
             if self.purchase_line_id is not None:
                 try:
-                    purchase_line = self.purchase_line
+                    purchase_line_model = self._meta.get_field("purchase_line").related_model
+                    purchase_line = purchase_line_model.objects.select_related("purchase").get(
+                        pk=self.purchase_line_id
+                    )
                 except self._meta.get_field("purchase_line").related_model.DoesNotExist:
                     add_error("purchase_line", "Purchase line does not exist.")
                 else:
@@ -158,6 +181,8 @@ class StockMovement(ImmutableModel):
                 add_error("sale_line", "Sale movements require a Sale line.")
             if self.stock_adjustment_id is not None or self.purchase_line_id is not None:
                 add_error("sale_line", "Sale movements cannot also reference another origin.")
+            if self.reversal_of_id is not None:
+                add_error("reversal_of", "Sale movements cannot reference a reversal origin.")
             if self.sale_line_id is not None:
                 try:
                     sale_line_model = self._meta.get_field("sale_line").related_model
@@ -178,6 +203,70 @@ class StockMovement(ImmutableModel):
                         add_error("product", "Sale movement Product must match its Sale line.")
                     if self.quantity_change != -sale_line.quantity:
                         add_error("quantity_change", "Sale movement quantity must match its Sale line.")
+        elif self.kind == self.Kind.REVERSAL:
+            if self.reversal_of_id is None:
+                add_error("reversal_of", "Reversal movements require an original movement.")
+            if (
+                self.stock_adjustment_id is not None
+                or self.purchase_line_id is not None
+                or self.sale_line_id is not None
+            ):
+                add_error("reversal_of", "Reversal movements cannot also reference another origin.")
+            if self.reversal_of_id is not None:
+                try:
+                    original = type(self).objects.select_related(
+                        "purchase_line__purchase", "sale_line__sale"
+                    ).get(pk=self.reversal_of_id)
+                except type(self).DoesNotExist:
+                    add_error("reversal_of", "Original Stock Movement does not exist.")
+                else:
+                    if original.kind not in {self.Kind.PURCHASE, self.Kind.SALE}:
+                        add_error("reversal_of", "Only Purchase and Sale movements can be reversed.")
+                    if original.reversal_of_id is not None:
+                        add_error("reversal_of", "A reversal movement cannot itself be reversed.")
+                    if type(self).objects.filter(reversal_of_id=original.pk).exists():
+                        add_error("reversal_of", "The original Stock Movement has already been reversed.")
+                    if self.business_id != original.business_id:
+                        add_error("business", "Reversal movement Business must match its original.")
+                    if self.product_id != original.product_id:
+                        add_error("product", "Reversal movement Product must match its original.")
+                    if self.quantity_change != -original.quantity_change:
+                        add_error("quantity_change", "Reversal movement quantity must negate its original.")
+                    # Re-fetching the original with its persisted owner avoids
+                    # accepting a caller-populated relation cache.  A reversal
+                    # is valid only while the owning document's authorized
+                    # void transaction has persisted VOIDED.
+                    if original.kind == self.Kind.PURCHASE:
+                        purchase_line_model = self._meta.get_field(
+                            "purchase_line"
+                        ).related_model
+                        try:
+                            purchase = purchase_line_model.objects.select_related(
+                                "purchase"
+                            ).get(pk=original.purchase_line_id).purchase
+                        except purchase_line_model.DoesNotExist:
+                            purchase = None
+                        if (
+                            purchase is None
+                            or purchase.status != purchase.Status.VOIDED
+                        ):
+                            add_error(
+                                "reversal_of",
+                                "Purchase reversals require a voided Purchase.",
+                            )
+                    elif original.kind == self.Kind.SALE:
+                        sale_line_model = self._meta.get_field("sale_line").related_model
+                        try:
+                            sale = sale_line_model.objects.select_related("sale").get(
+                                pk=original.sale_line_id
+                            ).sale
+                        except sale_line_model.DoesNotExist:
+                            sale = None
+                        if sale is None or sale.status != sale.Status.VOIDED:
+                            add_error(
+                                "reversal_of",
+                                "Sale reversals require a voided Sale.",
+                            )
         elif self.kind == self.Kind.ADJUSTMENT:
             if self.stock_adjustment_id is None:
                 add_error(
@@ -193,6 +282,8 @@ class StockMovement(ImmutableModel):
                     "sale_line",
                     "Adjustment movements cannot also reference a Sale line.",
                 )
+            if self.reversal_of_id is not None:
+                add_error("reversal_of", "Adjustment movements cannot reference a reversal origin.")
             if self.stock_adjustment_id is not None:
                 try:
                     adjustment = self.stock_adjustment

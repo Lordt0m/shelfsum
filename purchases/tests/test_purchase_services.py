@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import connection
+from django.db.models import Case, F, Value, When
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
@@ -13,8 +14,9 @@ from businesses.models import Business, Membership
 from catalogue.models import Product
 from inventory.models import StockAdjustment, StockMovement
 from inventory.services import record_stock_adjustment
+from purchases.forms import PurchaseForm, PurchaseLineFormSet
 from purchases.models import Purchase, PurchaseLine
-from purchases.services import complete_purchase
+from purchases.services import complete_purchase, save_draft_purchase
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
@@ -55,6 +57,29 @@ class PurchaseCompletionServiceTests(TestCase):
                 unit_cost=Decimal(unit_cost),
             )
         return purchase
+
+    def draft_edit_forms(self, purchase, line, *, quantity=2):
+        data = {
+            "purchase_date": purchase.purchase_date.isoformat(),
+            "supplier_name": purchase.supplier_name,
+            "reference": "EDITED",
+            "notes": purchase.notes,
+            "lines-TOTAL_FORMS": "1",
+            "lines-INITIAL_FORMS": "1",
+            "lines-MIN_NUM_FORMS": "0",
+            "lines-MAX_NUM_FORMS": "1000",
+            "lines-0-id": str(line.pk),
+            "lines-0-product": str(line.product_id),
+            "lines-0-quantity": str(quantity),
+            "lines-0-unit_cost": str(line.unit_cost),
+        }
+        form = PurchaseForm(data, instance=purchase)
+        formset = PurchaseLineFormSet(
+            data, instance=purchase, form_kwargs={"business": self.business}
+        )
+        self.assertTrue(form.is_valid())
+        self.assertTrue(formset.is_valid())
+        return form, formset
 
     def test_owner_and_staff_can_complete_valid_multi_line_drafts(self):
         first = self.product()
@@ -123,6 +148,72 @@ class PurchaseCompletionServiceTests(TestCase):
         ]
         self.assertTrue(product_lock_queries)
         self.assertTrue(any('ORDER BY "catalogue_product"."id" ASC' in query for query in product_lock_queries))
+
+    def test_purchase_writers_lock_parent_before_ordered_lines(self):
+        first = self.product()
+        second = self.product(name="Milo", sku="MILO-1")
+        purchase = self.draft((second, 1, "10.00"), (first, 1, "20.00"))
+        calls = []
+        from purchases import services
+
+        original_lock_purchase = services._lock_purchase
+        original_lock_lines = services._lock_purchase_lines
+        with patch(
+            "purchases.services._lock_purchase",
+            side_effect=lambda **kwargs: (
+                calls.append("purchase"), original_lock_purchase(**kwargs)
+            )[1],
+        ), patch(
+            "purchases.services._lock_purchase_lines",
+            side_effect=lambda **kwargs: (
+                calls.append("lines"), original_lock_lines(**kwargs)
+            )[1],
+        ):
+            complete_purchase(
+                business=self.business, actor=self.owner, purchase=purchase
+            )
+
+        self.assertEqual(calls[:2], ["purchase", "lines"])
+
+    def test_stale_draft_edit_rechecks_status_after_purchase_lock(self):
+        product = self.product()
+        purchase = self.draft((product, 1, "10.00"))
+        line = purchase.lines.get()
+        form, formset = self.draft_edit_forms(purchase, line)
+        complete_purchase(business=self.business, actor=self.owner, purchase=purchase)
+
+        with self.assertRaisesRegex(ValidationError, "already been completed"):
+            save_draft_purchase(
+                business=self.business,
+                actor=self.owner,
+                purchase=purchase,
+                form=form,
+                formset=formset,
+            )
+        purchase.refresh_from_db()
+        line.refresh_from_db()
+        self.assertEqual(purchase.status, Purchase.Status.COMPLETED)
+        self.assertEqual(line.quantity, 1)
+
+    def test_purchase_bulk_status_expressions_and_line_updates_cannot_bypass_guards(self):
+        product = self.product()
+        purchase = self.draft((product, 1, "10.00"))
+        line = purchase.lines.get()
+        for status in (
+            Purchase.Status.COMPLETED,
+            F("status"),
+            Case(
+                When(pk=purchase.pk, then=Value(Purchase.Status.COMPLETED)),
+                default=F("status"),
+            ),
+        ):
+            with self.assertRaisesRegex(TypeError, "immutable"):
+                Purchase.objects.filter(pk=purchase.pk).update(status=status)
+        with self.assertRaisesRegex(TypeError, "instance saves"):
+            PurchaseLine.objects.filter(pk=line.pk).update(quantity=2)
+        line.quantity = 2
+        with self.assertRaisesRegex(TypeError, "instance saves"):
+            PurchaseLine.objects.bulk_update((item for item in [line]), ["quantity"])
 
     def test_reconciliation_matches_stock_on_hand_to_purchase_movements(self):
         first = self.product()

@@ -17,7 +17,7 @@ class CompletedSaleQuerySet(models.QuerySet):
         )
 
     def _reject_if_completed(self):
-        if self.filter(status=Sale.Status.COMPLETED).exists():
+        if self.filter(status__in=Sale.terminal_statuses()).exists():
             raise TypeError(Sale.immutable_error)
 
     def update(self, **kwargs):
@@ -25,14 +25,14 @@ class CompletedSaleQuerySet(models.QuerySet):
             raise TypeError(Sale.immutable_error)
         with transaction.atomic():
             ids = self._locked_ids()
-            if Sale.objects.filter(pk__in=ids, status=Sale.Status.COMPLETED).exists():
+            if Sale.objects.filter(pk__in=ids, status__in=Sale.terminal_statuses()).exists():
                 raise TypeError(Sale.immutable_error)
             return models.QuerySet.update(self.filter(pk__in=ids), **kwargs)
 
     def delete(self):
         with transaction.atomic():
             ids = self._locked_ids()
-            if Sale.objects.filter(pk__in=ids, status=Sale.Status.COMPLETED).exists():
+            if Sale.objects.filter(pk__in=ids, status__in=Sale.terminal_statuses()).exists():
                 raise TypeError(Sale.immutable_error)
             return models.QuerySet.delete(self.filter(pk__in=ids))
 
@@ -43,14 +43,14 @@ class CompletedSaleQuerySet(models.QuerySet):
         ids = [obj.pk for obj in objs if obj.pk is not None]
         with transaction.atomic():
             self.filter(pk__in=ids)._locked_ids()
-            if any(obj.status == Sale.Status.COMPLETED for obj in objs) or self.model.objects.filter(pk__in=ids, status=Sale.Status.COMPLETED).exists():
+            if any(obj.status in Sale.terminal_statuses() for obj in objs) or self.model.objects.filter(pk__in=ids, status__in=Sale.terminal_statuses()).exists():
                 raise TypeError(Sale.immutable_error)
             return super().bulk_update(objs, fields, batch_size=batch_size)
 
     def bulk_create(self, objs, *args, **kwargs):
         objs = list(objs)
         with transaction.atomic():
-            if any(obj.status == Sale.Status.COMPLETED for obj in objs):
+            if any(obj.status in Sale.terminal_statuses() for obj in objs):
                 raise TypeError(Sale.immutable_error)
             return super().bulk_create(objs, *args, **kwargs)
 
@@ -61,6 +61,11 @@ class Sale(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         COMPLETED = "completed", "Completed"
+        VOIDED = "voided", "Voided"
+
+    @classmethod
+    def terminal_statuses(cls):
+        return (cls.Status.COMPLETED, cls.Status.VOIDED)
 
     business = models.ForeignKey(Business, on_delete=models.PROTECT, related_name="sales")
     sale_date = models.DateField()
@@ -84,20 +89,24 @@ class Sale(models.Model):
     def save(self, *args, **kwargs):
         if self._state.adding and self.status != self.Status.DRAFT:
             raise TypeError(self.immutable_error)
+        if not isinstance(self.status, str):
+            raise TypeError(self.immutable_error)
         if self._state.adding:
             return super().save(*args, **kwargs)
         with transaction.atomic():
             locked_sale = type(self).objects.select_for_update().get(pk=self.pk)
-            if locked_sale.status == self.Status.COMPLETED:
+            if locked_sale.status in self.terminal_statuses() and not getattr(self, "_void_authorized", False):
                 raise TypeError(self.immutable_error)
             if self.status == self.Status.COMPLETED and not getattr(self, "_completion_authorized", False):
                 raise TypeError("Complete Sales through the completion service.")
+            if self.status == self.Status.VOIDED and not getattr(self, "_void_authorized", False):
+                raise TypeError("Void Sales through the voiding service.")
             return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         with transaction.atomic():
             locked_sale = type(self).objects.select_for_update().get(pk=self.pk)
-            if locked_sale.status == self.Status.COMPLETED:
+            if locked_sale.status in self.terminal_statuses():
                 raise TypeError(self.immutable_error)
             return super().delete(*args, **kwargs)
 
@@ -128,13 +137,13 @@ class CompletedSaleLineQuerySet(models.QuerySet):
         return locked_line_ids, sale_ids
 
     def _reject_if_completed(self):
-        if self.filter(sale__status=Sale.Status.COMPLETED).exists():
+        if self.filter(sale__status__in=Sale.terminal_statuses()).exists():
             raise TypeError(SaleLine.immutable_error)
 
     def update(self, **kwargs):
         target = kwargs.get("sale")
         target_id = kwargs.get("sale_id", getattr(target, "pk", target))
-        if Sale.objects.filter(pk=target_id, status=Sale.Status.COMPLETED).exists():
+        if Sale.objects.filter(pk=target_id, status__in=Sale.terminal_statuses()).exists():
             raise TypeError(SaleLine.immutable_error)
         self._reject_if_completed()
         raise TypeError("Sale lines must be changed through instance saves.")
@@ -142,7 +151,7 @@ class CompletedSaleLineQuerySet(models.QuerySet):
     def delete(self):
         with transaction.atomic():
             line_ids, sale_ids = self._locked_sale_ids()
-            if Sale.objects.filter(pk__in=sale_ids, status=Sale.Status.COMPLETED).exists():
+            if Sale.objects.filter(pk__in=sale_ids, status__in=Sale.terminal_statuses()).exists():
                 raise TypeError(SaleLine.immutable_error)
             return models.QuerySet.delete(self.filter(pk__in=line_ids))
 
@@ -150,7 +159,7 @@ class CompletedSaleLineQuerySet(models.QuerySet):
         objs = list(objs)
         ids = [obj.pk for obj in objs if obj.pk is not None]
         sale_ids = {obj.sale_id for obj in objs if obj.sale_id}
-        if Sale.objects.filter(pk__in=sale_ids, status=Sale.Status.COMPLETED).exists() or self.model.objects.filter(pk__in=ids, sale__status=Sale.Status.COMPLETED).exists():
+        if Sale.objects.filter(pk__in=sale_ids, status__in=Sale.terminal_statuses()).exists() or self.model.objects.filter(pk__in=ids, sale__status__in=Sale.terminal_statuses()).exists():
             raise TypeError(SaleLine.immutable_error)
         raise TypeError("Sale lines must be changed through instance saves.")
 
@@ -159,7 +168,7 @@ class CompletedSaleLineQuerySet(models.QuerySet):
         sale_ids = {obj.sale_id for obj in objs if obj.sale_id}
         with transaction.atomic():
             list(Sale.objects.select_for_update().filter(pk__in=sale_ids).order_by("pk"))
-            if Sale.objects.filter(pk__in=sale_ids, status=Sale.Status.COMPLETED).exists():
+            if Sale.objects.filter(pk__in=sale_ids, status__in=Sale.terminal_statuses()).exists():
                 raise TypeError(SaleLine.immutable_error)
             for obj in objs:
                 obj.full_clean()
@@ -209,7 +218,7 @@ class SaleLine(models.Model):
     def save(self, *args, **kwargs):
         with transaction.atomic():
             locked_sale = Sale.objects.select_for_update().get(pk=self.sale_id)
-            if locked_sale.status == Sale.Status.COMPLETED:
+            if locked_sale.status in Sale.terminal_statuses():
                 raise TypeError(self.immutable_error)
             if not self._state.adding:
                 existing_line = type(self).objects.select_for_update().get(pk=self.pk)
@@ -221,7 +230,7 @@ class SaleLine(models.Model):
     def delete(self, *args, **kwargs):
         with transaction.atomic():
             locked_sale = Sale.objects.select_for_update().get(pk=self.sale_id)
-            if locked_sale.status == Sale.Status.COMPLETED:
+            if locked_sale.status in Sale.terminal_statuses():
                 raise TypeError(self.immutable_error)
             if not self._state.adding:
                 type(self).objects.select_for_update().get(pk=self.pk)

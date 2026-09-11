@@ -1,3 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Sale #{{ sale.pk }} | ShelfSum{% endblock %}
-{% block content %}<section class="page-heading"><p class="eyebrow">Sale</p><h1>Sale #{{ sale.pk }}</h1><p>{{ sale.sale_date }} · {{ sale.get_status_display }}</p></section>{% if error %}<p class="form-error">{{ error }}</p>{% endif %}<dl><dt>Customer</dt><dd>{{ sale.customer_name|default:"-" }}</dd><dt>Reference</dt><dd>{{ sale.reference|default:"-" }}</dd></dl><table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Cost snapshot</th><th>Total</th></tr></thead><tbody>{% for line in sale.lines.all %}<tr><td>{{ line.product.name }}</td><td>{{ line.quantity }}</td><td>{{ line.unit_price }}</td><td>{{ line.cost_snapshot|default:"-" }}</td><td>{{ line.line_total }}</td></tr>{% endfor %}</tbody></table><p><strong>Total: {{ sale.total }}</strong></p>{% if sale.status == "draft" %}<p><a class="button" href="{% url 'sale_edit' sale.pk %}">Edit draft</a></p><form method="post">{% csrf_token %}<button class="button" type="submit">Complete Sale</button></form>{% endif %}{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">Sale</p><h1>Sale #{{ sale.pk }}</h1><p>{{ sale.sale_date }} · {{ sale.get_status_display }}</p></section>
+{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+<dl><dt>Customer</dt><dd>{{ sale.customer_name|default:"-" }}</dd><dt>Reference</dt><dd>{{ sale.reference|default:"-" }}</dd></dl>
+<table><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Cost snapshot</th><th>Total</th></tr></thead><tbody>{% for line in sale.lines.all %}<tr><td>{{ line.product.name }}</td><td>{{ line.quantity }}</td><td>{{ line.unit_price }}</td><td>{{ line.cost_snapshot|default:"-" }}</td><td>{{ line.line_total }}</td></tr>{% endfor %}</tbody></table>
+<p><strong>Total: {{ sale.total }}</strong></p>
+{% if sale.status == "draft" %}<p><a class="button" href="{% url 'sale_edit' sale.pk %}">Edit draft</a></p><form method="post">{% csrf_token %}<button class="button" type="submit">Complete Sale</button></form>{% endif %}
+{% if sale.status == "completed" %}<p><a class="button" href="{% url 'sale_void' sale.pk %}">Review voiding this Sale</a></p>{% endif %}
+{% endblock %}

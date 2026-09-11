@@ -90,3 +90,77 @@ def complete_sale(*, business, actor, sale):
         StockMovement.objects.create(business=business, product=product, quantity_change=-line.quantity, kind=StockMovement.Kind.SALE, sale_line=line, actor=actor)
     record_audit_event(business=business, actor=actor, action="sale.completed", affected_object=locked_sale, summary=f"Completed Sale {locked_sale.pk} for {locked_sale.total}.")
     return locked_sale
+
+
+@transaction.atomic
+def void_sale(*, business, actor, sale):
+    """Void a completed Sale and restore its quantities via immutable reversals."""
+    ensure_business_write_allowed(business=business, actor=actor)
+    if sale.business_id != business.pk:
+        raise ValidationError("The Sale does not belong to this Business.")
+    locked_sale = _lock_sale(business=business, sale_id=sale.pk)
+    if locked_sale.status == Sale.Status.VOIDED:
+        raise ValidationError("This Sale has already been voided.")
+    if locked_sale.status != Sale.Status.COMPLETED:
+        raise ValidationError("Only a completed Sale can be voided.")
+
+    lines = _lock_sale_lines(sale=locked_sale)
+    if not lines:
+        raise ValidationError("A completed Sale must contain lines.")
+    movements = list(
+        StockMovement.objects.select_for_update()
+        .filter(sale_line_id__in=[line.pk for line in lines])
+        .order_by("product_id", "pk")
+    )
+    movement_by_line = {movement.sale_line_id: movement for movement in movements}
+    if len(movements) != len(lines) or set(movement_by_line) != {line.pk for line in lines}:
+        raise ValidationError("The Sale movement history is incomplete.")
+
+    product_ids = sorted({line.product_id for line in lines})
+    locked_products = {
+        product.pk: product
+        for product in Product.objects.select_for_update()
+        .filter(pk__in=product_ids, business=business)
+        .order_by("pk")
+    }
+    if len(locked_products) != len(product_ids):
+        raise ValidationError("Every Sale Product must belong to this Business.")
+    for line in lines:
+        movement = movement_by_line[line.pk]
+        if movement.kind != StockMovement.Kind.SALE or movement.product_id != line.product_id or movement.quantity_change != -line.quantity:
+            raise ValidationError("The Sale movement history does not match its lines.")
+
+    # Reversal validation deliberately reads the persisted owning Sale state.
+    # Make the authorized transition after all checks and locks, knowing the
+    # enclosing transaction restores it if a reversal, stock update, or audit
+    # write fails.
+    locked_sale.status = Sale.Status.VOIDED
+    locked_sale._void_authorized = True
+    try:
+        locked_sale.save(update_fields=["status", "updated_at"])
+    finally:
+        del locked_sale._void_authorized
+
+    for line in lines:
+        product = locked_products[line.product_id]
+        StockMovement.objects.create(
+            business=business,
+            product=product,
+            quantity_change=line.quantity,
+            kind=StockMovement.Kind.REVERSAL,
+            reversal_of=movement_by_line[line.pk],
+            actor=actor,
+        )
+
+    for line in lines:
+        product = locked_products[line.product_id]
+        product.stock_on_hand += line.quantity
+        product.save(update_fields=["stock_on_hand", "updated_at"])
+    record_audit_event(
+        business=business,
+        actor=actor,
+        action="sale.voided",
+        affected_object=locked_sale,
+        summary=f"Voided Sale {locked_sale.pk} for {locked_sale.total}.",
+    )
+    return locked_sale

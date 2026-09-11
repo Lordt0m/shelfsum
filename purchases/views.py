@@ -5,7 +5,7 @@ from django.utils.dateparse import parse_date
 from businesses.access import demo_business_read_only, membership_required
 from purchases.forms import PurchaseForm, PurchaseLineFormSet
 from purchases.models import Purchase
-from purchases.services import complete_purchase
+from purchases.services import complete_purchase, save_draft_purchase, void_purchase
 
 
 def _draft_line_data(formset):
@@ -141,6 +141,27 @@ def purchase_detail(request, purchase_id):
 
 @membership_required
 @demo_business_read_only
+def purchase_void(request, purchase_id):
+    purchase = get_object_or_404(
+        Purchase.objects.prefetch_related("lines__product"),
+        pk=purchase_id,
+        business=request.business,
+    )
+    if request.method == "GET":
+        if purchase.status != Purchase.Status.COMPLETED:
+            return redirect("purchase_detail", purchase_id=purchase.pk)
+        return render(request, "purchases/purchase_void_confirm.html", {"purchase": purchase})
+    if request.method != "POST":
+        return render(request, "purchases/purchase_void_confirm.html", {"purchase": purchase}, status=405)
+    try:
+        void_purchase(business=request.business, actor=request.user, purchase=purchase)
+    except ValidationError as error:
+        return render(request, "purchases/purchase_detail.html", {"purchase": purchase, "error": error}, status=400)
+    return redirect("purchase_detail", purchase_id=purchase.pk)
+
+
+@membership_required
+@demo_business_read_only
 def purchase_edit(request, purchase_id):
     purchase = get_object_or_404(
         Purchase, pk=purchase_id, business=request.business
@@ -164,9 +185,18 @@ def purchase_edit(request, purchase_id):
         if not _draft_line_data(formset):
             form.add_error(None, "Add at least one Product line.")
         else:
-            form.save()
-            formset.save()
-            return redirect("purchase_detail", purchase_id=purchase.pk)
+            try:
+                save_draft_purchase(
+                    business=request.business,
+                    actor=request.user,
+                    purchase=purchase,
+                    form=form,
+                    formset=formset,
+                )
+            except ValidationError as error:
+                form.add_error(None, error)
+            else:
+                return redirect("purchase_detail", purchase_id=purchase.pk)
 
     return render(
         request,

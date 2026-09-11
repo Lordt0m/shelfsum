@@ -24,10 +24,10 @@ The current application provides the product landing page, a deployment health r
 - Product search and active/low-stock filters are combined in bookmarkable query parameters; the low-stock boundary is inclusive.
 - Owners and active Staff Members can draft, edit, filter, and complete multi-line Purchases using server-rendered forms that remain usable without JavaScript.
 - Completing a Purchase deterministically locks its Products, updates Stock on Hand and current unit costs, writes one immutable Purchase-origin Stock Movement per line, and records an Audit Event in one transaction.
-- Completed Purchases and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion; corrections remain reserved for a later explicit reversal workflow.
+- Completed and voided Purchases and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement, rejects a negative resulting Stock on Hand, and leaves current Product unit cost unchanged.
 - Owners and active Staff Members can draft, edit, list, filter, inspect, and complete multi-line Sales using server-rendered forms that remain usable without JavaScript.
 - Completing a Sale deterministically locks its Products, rechecks Stock on Hand, snapshots each Product cost on its Sale line, decreases stock, writes one immutable Sale-origin Stock Movement per line, and records an Audit Event in one transaction.
-- Completed Sales and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion; corrections remain reserved for a later explicit reversal workflow.
+- Completed and voided Sales and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement and restores the sold quantities while preserving Sale cost snapshots.
 
 ## Product boundary
 
@@ -69,7 +69,7 @@ Open `http://127.0.0.1:8000/` for the landing page. The health response is avail
 .\.venv\Scripts\python manage.py test
 ```
 
-Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows use focused public service seams, including Product creation, Purchase completion, and Sale completion, for exact atomicity and ledger-invariant tests.
+Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows use focused public service seams, including Product creation, Purchase and Sale completion, and Purchase and Sale voiding, for exact atomicity and ledger-invariant tests.
 
 The active specification and vertical tickets are kept in [`.scratch/finance-inventory/`](.scratch/finance-inventory/). Product vocabulary and invariants are defined in [`CONTEXT.md`](CONTEXT.md), with consequential technical choices recorded under [`docs/adr/`](docs/adr/).
 
@@ -79,7 +79,7 @@ A later milestone will provide a read-only Demo Business containing only fiction
 
 ## Working decisions
 
-- Completed stock-affecting records will be immutable and corrected by explicit reversal workflows.
+- Completed and voided stock-affecting records are immutable and corrected only by explicit one-time reversal workflows.
 - Stock on Hand will be fast to read while an immutable Stock Movement history explains every change.
 - Monetary values will use decimal arithmetic and quantities will use whole units in the first release.
 - The deployed application will use PostgreSQL and keep durable data off the web service's filesystem.
@@ -90,8 +90,8 @@ A later milestone will provide a read-only Demo Business containing only fiction
 - `catalogue` owns Products, their forms and pages, and Product-creation orchestration.
 - `inventory` owns Stock Adjustments, immutable Stock Movements, and locked stock changes.
 - `auditing` owns append-only Audit Events.
-- `purchases` owns draft Purchase entry and the transactional `complete_purchase` seam; Purchase-origin Stock Movements remain in `inventory`.
-- `sales` owns draft Sale entry and the transactional `complete_sale` seam; Sale-origin Stock Movements remain in `inventory`.
+- `purchases` owns draft Purchase entry and the transactional `complete_purchase` and `void_purchase` seams; Purchase-origin and reversal Stock Movements remain in `inventory`.
+- `sales` owns draft Sale entry and the transactional `complete_sale` and `void_sale` seams; Sale-origin and reversal Stock Movements remain in `inventory`.
 
 The public Product-creation service coordinates these modules inside one database transaction, which keeps the code a deployable Django monolith while making rollback behaviour directly testable.
 

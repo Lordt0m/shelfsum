@@ -5,7 +5,7 @@ from django.utils.dateparse import parse_date
 from businesses.access import demo_business_read_only, membership_required
 from sales.forms import SaleForm, SaleLineFormSet
 from sales.models import Sale
-from sales.services import complete_sale, save_draft_sale
+from sales.services import complete_sale, save_draft_sale, void_sale
 
 
 def _sale_post_data(request):
@@ -71,6 +71,27 @@ def sale_detail(request, sale_id):
         except ValidationError as error: return render(request, "sales/sale_detail.html", {"sale": sale, "error": error}, status=400)
         return redirect("sale_detail", sale_id=sale.pk)
     return render(request, "sales/sale_detail.html", {"sale": sale})
+
+
+@membership_required
+@demo_business_read_only
+def sale_void(request, sale_id):
+    sale = get_object_or_404(
+        Sale.objects.prefetch_related("lines__product"),
+        pk=sale_id,
+        business=request.business,
+    )
+    if request.method == "GET":
+        if sale.status != Sale.Status.COMPLETED:
+            return redirect("sale_detail", sale_id=sale.pk)
+        return render(request, "sales/sale_void_confirm.html", {"sale": sale})
+    if request.method != "POST":
+        return render(request, "sales/sale_void_confirm.html", {"sale": sale}, status=405)
+    try:
+        void_sale(business=request.business, actor=request.user, sale=sale)
+    except ValidationError as error:
+        return render(request, "sales/sale_detail.html", {"sale": sale, "error": error}, status=400)
+    return redirect("sale_detail", sale_id=sale.pk)
 
 
 @membership_required

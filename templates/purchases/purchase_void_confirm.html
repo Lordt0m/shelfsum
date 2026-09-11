@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Void Purchase #{{ purchase.pk }} | ShelfSum{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">Purchase correction</p><h1>Void Purchase #{{ purchase.pk }}?</h1></section>
+<p>This one-time action preserves the Purchase and its original stock history, then removes these quantities from Stock on Hand:</p>
+<ul>{% for line in purchase.lines.all %}<li>{{ line.product.name }}: {{ line.quantity }} unit{{ line.quantity|pluralize }}</li>{% endfor %}</ul>
+<p>It does not change the Product's current unit cost. The Purchase will become read-only and cannot be voided again.</p>
+<form method="post">{% csrf_token %}<button class="button" type="submit">Confirm void Purchase</button> <a href="{% url 'purchase_detail' purchase.pk %}">Cancel</a></form>
+{% endblock %}

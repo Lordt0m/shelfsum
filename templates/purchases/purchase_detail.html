@@ -33,4 +33,7 @@
     <button class="button" type="submit">Complete Purchase</button>
   </form>
 {% endif %}
+{% if purchase.status == "completed" %}
+  <p><a class="button" href="{% url 'purchase_void' purchase.pk %}">Review voiding this Purchase</a></p>
+{% endif %}
 {% endblock %}

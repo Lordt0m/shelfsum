@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Void Sale #{{ sale.pk }} | ShelfSum{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">Sale correction</p><h1>Void Sale #{{ sale.pk }}?</h1></section>
+<p>This one-time action preserves the Sale and its original stock history, then restores these quantities to Stock on Hand:</p>
+<ul>{% for line in sale.lines.all %}<li>{{ line.product.name }}: {{ line.quantity }} unit{{ line.quantity|pluralize }}</li>{% endfor %}</ul>
+<p>The Sale will become read-only and cannot be voided again.</p>
+<form method="post">{% csrf_token %}<button class="button" type="submit">Confirm void Sale</button> <a href="{% url 'sale_detail' sale.pk %}">Cancel</a></form>
+{% endblock %}
