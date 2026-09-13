@@ -57,6 +57,16 @@ class ExpenseRequestTests(TestCase):
         self.assertEqual(invalid_category.status_code, 200)
         self.assertEqual(Expense.objects.count(), 0)
 
+    def test_create_rejects_voided_status_without_writing(self):
+        with self.assertRaises(ValidationError):
+            Expense.objects.create(
+                business=self.business,
+                actor=self.owner,
+                status=Expense.Status.VOIDED,
+                **self.payload(),
+            )
+        self.assertEqual(Expense.objects.count(), 0)
+
     def test_list_filters_dates_and_status_without_leaking_other_business(self):
         recorded = Expense.objects.create(
             business=self.business,

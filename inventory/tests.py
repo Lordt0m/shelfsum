@@ -25,14 +25,12 @@ class StockAdjustmentBehaviorTests(TestCase):
         self.business = Business.objects.create(name="Shop")
         Membership.objects.create(user=self.owner, business=self.business, role=Membership.Role.OWNER)
         Membership.objects.create(user=self.staff, business=self.business, role=Membership.Role.STAFF)
-        self.product = Product.objects.create(business=self.business, name="Tea")
-        record_stock_adjustment(
+        self.product = create_product(
             business=self.business,
             actor=self.owner,
-            product=self.product,
-            quantity_change=10,
-            reason=StockAdjustment.Reason.OPENING,
-            allow_opening=True,
+            details=ProductCreation(
+                "Tea", "", "", Decimal("2"), Decimal("1"), 10, 0
+            ),
         )
         self.product.refresh_from_db()
 
@@ -55,7 +53,9 @@ class StockAdjustmentBehaviorTests(TestCase):
         self.assertEqual(
             StockMovement.objects.get(stock_adjustment=adjustment).quantity_change, -2
         )
-        self.assertEqual(AuditEvent.objects.get().action, "stock.adjusted")
+        self.assertEqual(
+            AuditEvent.objects.get(action="stock.adjusted").action, "stock.adjusted"
+        )
 
     def test_service_rejects_manual_opening_and_invalid_quantity(self):
         with self.assertRaises(ValidationError):
@@ -63,6 +63,17 @@ class StockAdjustmentBehaviorTests(TestCase):
         for quantity in (0, True, Decimal("1.5")):
             with self.assertRaises(ValidationError):
                 record_stock_adjustment(business=self.business, actor=self.owner, product=self.product, quantity_change=quantity, reason=StockAdjustment.Reason.FOUND)
+
+    def test_public_service_cannot_enable_opening_stock(self):
+        with self.assertRaises(TypeError):
+            record_stock_adjustment(
+                business=self.business,
+                actor=self.owner,
+                product=self.product,
+                quantity_change=1,
+                reason=StockAdjustment.Reason.OPENING,
+                allow_opening=True,
+            )
 
     def test_service_records_every_manual_reason(self):
         for reason, quantity in (("damage", -1), ("missing", -1), ("found", 1), ("correction", 1)):

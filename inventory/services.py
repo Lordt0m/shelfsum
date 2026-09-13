@@ -9,7 +9,7 @@ from inventory.models import StockAdjustment, StockMovement
 
 
 @transaction.atomic
-def record_stock_adjustment(
+def _record_stock_adjustment(
     *, business, actor, product, quantity_change, reason, notes="", allow_opening=False
 ):
     ensure_business_write_allowed(business=business, actor=actor)
@@ -65,3 +65,30 @@ def record_stock_adjustment(
             summary=f"Adjusted {locked_product.name} by {quantity_change} units ({adjustment.get_reason_display()}).",
         )
     return adjustment
+
+
+def record_stock_adjustment(
+    *, business, actor, product, quantity_change, reason, notes=""
+):
+    """Record a deliberate post-creation Stock Adjustment."""
+    return _record_stock_adjustment(
+        business=business,
+        actor=actor,
+        product=product,
+        quantity_change=quantity_change,
+        reason=reason,
+        notes=notes,
+    )
+
+
+def _record_opening_stock(*, business, actor, product, quantity_change, notes=""):
+    """Internal catalogue-creation path for a Product's opening Stock."""
+    return _record_stock_adjustment(
+        business=business,
+        actor=actor,
+        product=product,
+        quantity_change=quantity_change,
+        reason=StockAdjustment.Reason.OPENING,
+        notes=notes,
+        allow_opening=True,
+    )

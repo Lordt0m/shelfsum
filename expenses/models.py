@@ -104,6 +104,8 @@ class Expense(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        if self._state.adding and self.status != self.Status.RECORDED:
+            raise ValidationError({"status": "New Expenses must be recorded."})
         if not self._state.adding:
             raise TypeError(self.immutable_error)
         self.full_clean()

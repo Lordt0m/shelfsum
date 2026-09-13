@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import IntegrityError
 from django.test import TestCase, override_settings
 
 from auditing.models import AuditEvent
@@ -72,10 +73,10 @@ class ProductCreationServiceTests(TestCase):
 
     def test_failure_during_stock_trace_rolls_back_the_product(self):
         with patch(
-            "catalogue.services.record_stock_adjustment",
-            side_effect=RuntimeError("simulated ledger failure"),
+            "inventory.services.StockMovement.objects.create",
+            side_effect=IntegrityError("simulated ledger failure"),
         ):
-            with self.assertRaisesRegex(RuntimeError, "ledger failure"):
+            with self.assertRaisesRegex(IntegrityError, "ledger failure"):
                 create_product(
                     business=self.business, actor=self.actor, details=self.details()
                 )
