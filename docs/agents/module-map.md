@@ -28,6 +28,10 @@ Use this map to find the owner of a boundary. Keep interfaces small: callers pro
 
 | IF-09 | void confirmation views -> `purchases.void_purchase` / `sales.void_sale` | Void a completed document once using exact immutable reversals, stock updates, protected VOIDED status, and Audit Event in one transaction. | Active member, writable Business, scoped completed document, intact origin history; sufficient Purchase stock | Forgery, replay, negative stock, CSRF, isolation, rollback, and reconciliation tests | `purchases/services.py`, `sales/services.py`, `inventory/models.py` |
 
+| IF-10 | stock adjustment views -> `inventory.record_stock_adjustment` | Preview a signed whole-unit correction, then recheck a locked active Product and atomically persist the Stock Adjustment, Stock Movement, Stock on Hand, and `stock.adjusted` Audit Event. | Active member, writable Business, scoped active Product, supported non-opening reason | Request/service isolation, CSRF, preview no-write, negative/stale recheck, rollback, reconciliation, immutable/provenance tests | `inventory/forms.py`, `inventory/views.py`, `inventory/services.py`, `inventory/models.py` |
+
+Expenses are owned by `expenses`; recording and explicit void-and-replace correction are transactional services, and every lookup is membership-scoped by its views.
+
 Draft Purchase and Sale edits use their owning `save_draft_purchase` and `save_draft_sale` services. Editing, completion, and voiding acquire the parent document before ordered lines and recheck lifecycle state after locking.
 
 Update this file only when ownership, a public seam, or an invariant changes. Implementation detail that does not affect callers belongs in code and tests.

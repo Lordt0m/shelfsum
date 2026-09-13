@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} | ShelfSum{% endblock %}
+{% block content %}<h1>{{ page_title }}</h1><p>Use a signed whole number. Opening stock is recorded when creating a Product.</p><form method="post">{% csrf_token %}{{ form.as_p }}{% if preview is not None %}<p aria-live="polite">Resulting Stock on Hand: <strong>{{ preview }}</strong></p>{% endif %}<button type="submit" name="action" value="preview">Preview resulting Stock on Hand</button> <button type="submit" name="action" value="record">Record Stock Adjustment</button></form>{% endblock %}

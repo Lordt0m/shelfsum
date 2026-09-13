@@ -63,6 +63,7 @@ def create_product(*, business, actor, details):
             quantity_change=details.opening_quantity,
             reason=StockAdjustment.Reason.OPENING,
             notes="Opening quantity recorded during Product creation.",
+            allow_opening=True,
         )
         product.refresh_from_db(fields=["stock_on_hand"])
 

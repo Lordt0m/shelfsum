@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} | ShelfSum{% endblock %}
+{% block content %}<h1>{{ page_title }}</h1>{% if original %}<p>Correcting Expense #{{ original.pk }} creates a new linked record and voids the original.</p>{% endif %}<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{{ page_title }}</button></form>{% endblock %}

@@ -27,6 +27,7 @@ The current application provides the product landing page, a deployment health r
 - Completed and voided Purchases and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement, rejects a negative resulting Stock on Hand, and leaves current Product unit cost unchanged.
 - Owners and active Staff Members can draft, edit, list, filter, inspect, and complete multi-line Sales using server-rendered forms that remain usable without JavaScript.
 - Completing a Sale deterministically locks its Products, rechecks Stock on Hand, snapshots each Product cost on its Sale line, decreases stock, writes one immutable Sale-origin Stock Movement per line, and records an Audit Event in one transaction.
+- Owners and active Staff Members can record, list, filter, inspect, void, and correct Expenses with controlled categories, positive decimal amounts, immutable history, linked replacements, and audited lifecycle changes.
 - Completed and voided Sales and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement and restores the sold quantities while preserving Sale cost snapshots.
 
 ## Product boundary
@@ -92,6 +93,7 @@ A later milestone will provide a read-only Demo Business containing only fiction
 - `auditing` owns append-only Audit Events.
 - `purchases` owns draft Purchase entry and the transactional `complete_purchase` and `void_purchase` seams; Purchase-origin and reversal Stock Movements remain in `inventory`.
 - `sales` owns draft Sale entry and the transactional `complete_sale` and `void_sale` seams; Sale-origin and reversal Stock Movements remain in `inventory`.
+- `expenses` owns immutable Expense records, request forms, date/status filters, and audited void-and-replace correction workflows.
 
 The public Product-creation service coordinates these modules inside one database transaction, which keeps the code a deployable Django monolith while making rollback behaviour directly testable.
 

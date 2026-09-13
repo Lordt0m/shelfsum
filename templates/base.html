@@ -17,6 +17,8 @@
         <a href="{% url 'product_list' %}">Products</a>
         <a href="{% url 'purchase_list' %}">Purchases</a>
         <a href="{% url 'sale_list' %}">Sales</a>
+        <a href="{% url 'expense_list' %}">Expenses</a>
+        <a href="{% url 'adjustment_list' %}">Stock adjustments</a>
         <a href="{% url 'password_change' %}">Password</a>
         <form class="nav-form" action="{% url 'sign_out' %}" method="post">
           {% csrf_token %}

@@ -8,6 +8,15 @@ from catalogue.models import Product
 from core.models import ImmutableModel, ImmutableQuerySet
 
 
+class StockAdjustmentQuerySet(ImmutableQuerySet):
+    def bulk_create(self, objs, *args, **kwargs):
+        objs = list(objs)
+        for adjustment in objs:
+            adjustment._validate_quantity_change()
+            adjustment.full_clean()
+        return super().bulk_create(objs, *args, **kwargs)
+
+
 class StockAdjustment(ImmutableModel):
     immutable_error = "Stock Adjustments are immutable."
     class Reason(models.TextChoices):
@@ -25,12 +34,43 @@ class StockAdjustment(ImmutableModel):
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = StockAdjustmentQuerySet.as_manager()
+
     class Meta:
         constraints = [
             models.CheckConstraint(
                 condition=~Q(quantity_change=0), name="nonzero_stock_adjustment"
             )
         ]
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self._validate_quantity_change()
+            self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def _validate_quantity_change(self):
+        if isinstance(self.quantity_change, bool) or not isinstance(
+            self.quantity_change, int
+        ):
+            raise ValidationError(
+                {"quantity_change": "Stock Adjustment quantities must be whole numbers."}
+            )
+
+    def clean(self):
+        errors = {}
+        if isinstance(self.quantity_change, bool) or not isinstance(self.quantity_change, int):
+            errors["quantity_change"] = "Stock Adjustment quantities must be whole numbers."
+        if self.quantity_change == 0:
+            errors["quantity_change"] = "A Stock Adjustment cannot have a zero quantity."
+        if self.product_id and self.business_id:
+            try:
+                if Product.objects.only("business_id").get(pk=self.product_id).business_id != self.business_id:
+                    errors["product"] = "The Product must belong to this Business."
+            except Product.DoesNotExist:
+                errors["product"] = "The Product does not exist."
+        if errors:
+            raise ValidationError(errors)
 
 
 class StockMovementQuerySet(ImmutableQuerySet):
@@ -286,7 +326,7 @@ class StockMovement(ImmutableModel):
                 add_error("reversal_of", "Adjustment movements cannot reference a reversal origin.")
             if self.stock_adjustment_id is not None:
                 try:
-                    adjustment = self.stock_adjustment
+                    adjustment = StockAdjustment.objects.get(pk=self.stock_adjustment_id)
                 except StockAdjustment.DoesNotExist:
                     add_error("stock_adjustment", "Stock Adjustment does not exist.")
                 else:
