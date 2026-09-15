@@ -33,6 +33,15 @@ def _activity_link(event):
     return reverse(route, args=[event.object_identifier]) if route else None
 
 
+SUPPORTED_ACTIVITY_OBJECT_TYPES = (
+    "catalogue.Product",
+    "purchases.Purchase",
+    "sales.Sale",
+    "expenses.Expense",
+    "inventory.StockAdjustment",
+)
+
+
 def dashboard_context(*, business):
     """Return read-only, membership-scoped operational dashboard data."""
     today = timezone.localtime(timezone.now(), LAGOS).date()
@@ -67,10 +76,24 @@ def dashboard_context(*, business):
         stock_on_hand__lte=F("low_stock_threshold"),
     )
     recent_activity = list(
-        AuditEvent.objects.filter(business=business).select_related("actor")[:8]
+        AuditEvent.objects.filter(
+            business=business, object_type__in=SUPPORTED_ACTIVITY_OBJECT_TYPES
+        ).select_related("actor")[:8]
     )
     for event in recent_activity:
         event.record_url = _activity_link(event)
+    stock_breakdown = [
+        {
+            "name": product.name,
+            "stock_on_hand": product.stock_on_hand,
+            "current_unit_cost": product.unit_cost,
+            "contribution": product.stock_on_hand * product.unit_cost,
+            "product_url": reverse("product_detail", args=[product.pk]),
+        }
+        for product in Product.objects.filter(
+            business=business, stock_on_hand__gt=0
+        ).order_by("name", "pk")
+    ]
     dates = f"date_from={period_start.isoformat()}&date_to={period_end.isoformat()}"
     return {
         "dashboard": {
@@ -81,6 +104,7 @@ def dashboard_context(*, business):
             "expenses": expenses,
             "profit": revenue - cost_of_goods_sold - expenses,
             "stock_value": stock_value,
+            "stock_breakdown": stock_breakdown,
             "low_stock_count": low_stock.count(),
             "recent_activity": recent_activity,
             "sales_url": f'{reverse("sale_list")}?status=completed&{dates}',

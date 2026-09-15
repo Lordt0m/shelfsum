@@ -503,6 +503,30 @@ footer p {
   font-weight: 700;
 }
 
+.stock-breakdown {
+  margin: 0 0 18px;
+  border-top: 1px solid var(--line);
+}
+
+.stock-breakdown div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+.stock-breakdown dt,
+.stock-breakdown dd {
+  margin: 0;
+}
+
+.stock-breakdown dd {
+  text-align: right;
+  color: var(--muted);
+}
+
 @media (max-width: 720px) {
   .site-header,
   main,
@@ -547,6 +571,16 @@ footer p {
 
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stock-breakdown div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stock-breakdown dd {
+    text-align: left;
   }
 
   .page-heading {

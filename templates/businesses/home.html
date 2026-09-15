@@ -25,7 +25,15 @@
       <article><h3>Estimated cost of goods sold</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.cost_of_goods_sold|floatformat:2 }}</p><a href="{{ dashboard.sales_url }}">See completion-time cost snapshots</a></article>
       <article><h3>Recorded Expenses</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.expenses|floatformat:2 }}</p>{% if dashboard.expenses %}<a href="{{ dashboard.expenses_url }}">View recorded Expenses in this period</a>{% else %}<p>No recorded Expenses in this period.</p>{% endif %}</article>
       <article><h3>Estimated Profit</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.profit|floatformat:2 }}</p><p>Operational estimate, not accounting, tax, or cash profit. Revenue minus completion-time cost snapshots and recorded Expenses.</p><a href="{{ dashboard.sales_url }}">Explain Sales inputs</a> · <a href="{{ dashboard.expenses_url }}">Explain Expense inputs</a></article>
-      <article><h3>Current stock value</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.stock_value|floatformat:2 }}</p><p>Current balance using positive Stock on Hand and each Product's current unit cost, including inactive Products.</p><a href="{% url 'product_list' %}?status=all">View Product balances</a></article>
+      <article><h3>Current stock value</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.stock_value|floatformat:2 }}</p><p>Current balance using positive Stock on Hand and each Product's current unit cost, including inactive Products.</p>
+        {% if dashboard.stock_breakdown %}
+          <dl class="stock-breakdown" aria-label="Current stock value breakdown">
+            {% for line in dashboard.stock_breakdown %}
+              <div><dt><a href="{{ line.product_url }}">{{ line.name }}</a></dt><dd>{{ line.stock_on_hand }} × {{ business.currency }} {{ line.current_unit_cost|floatformat:2 }} = {{ business.currency }} {{ line.contribution|floatformat:2 }}</dd></div>
+            {% endfor %}
+          </dl>
+        {% endif %}
+        <a href="{% url 'product_list' %}?status=all">View Product balances</a></article>
       <article><h3>Low stock</h3><p class="dashboard-value">{{ dashboard.low_stock_count }}</p>{% if dashboard.low_stock_count %}<a href="{{ dashboard.low_stock_url }}">View active low-stock Products</a>{% else %}<p>No active Products are currently low on stock.</p>{% endif %}</article>
     </div>
   </section>

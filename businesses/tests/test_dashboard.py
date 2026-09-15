@@ -9,6 +9,7 @@ from django.urls import reverse
 from auditing.models import AuditEvent
 from auditing.services import record_audit_event
 from businesses.models import Business, Membership
+from businesses.services import add_staff_member
 from catalogue.services import ProductCreation, ProductUpdate, create_product, deactivate_product, update_product
 from expenses.models import Expense
 from expenses.services import correct_expense, record_expense
@@ -64,6 +65,74 @@ class BusinessDashboardTests(TestCase):
         self.assertContains(response, f'{reverse("product_list")}?status=active&amp;stock=low')
         self.assertEqual(len(dashboard["recent_activity"]), 8)
         self.assertTrue(all(event.record_url for event in dashboard["recent_activity"]))
+
+    def test_recent_activity_fills_eight_supported_records_before_slicing(self):
+        product = self.create_product()
+        for number in range(9):
+            record_audit_event(
+                business=self.business,
+                actor=self.owner,
+                action="product.viewed",
+                affected_object=product,
+                summary=f"Supported activity {number}",
+            )
+        invited = get_user_model().objects.create_user(
+            email="new-staff@example.com", password="safe-password-123"
+        )
+
+        add_staff_member(
+            business=self.business, actor=self.owner, email=invited.email
+        )
+        response = self.dashboard()
+
+        activity = response.context["dashboard"]["recent_activity"]
+        self.assertEqual(len(activity), 8)
+        self.assertTrue(all(event.record_url for event in activity))
+        self.assertNotContains(response, "Added Staff Member new-staff@example.com.")
+
+    def test_stock_breakdown_reconciles_positive_products_and_links_each_product(self):
+        active = self.create_product(name="Beans", stock=8, cost="4.00")
+        inactive = self.create_product(name="Rice", stock=3, cost="7.50")
+        deactivate_product(business=self.business, actor=self.owner, product=inactive)
+        self.create_product(name="Empty", stock=0, cost="99.00")
+
+        other = Business.objects.create(name="Other Shop")
+        other_owner = get_user_model().objects.create_user(
+            email="stock-other@example.com", password="safe-password-123"
+        )
+        Membership.objects.create(
+            user=other_owner, business=other, role=Membership.Role.OWNER
+        )
+        create_product(
+            business=other,
+            actor=other_owner,
+            details=ProductCreation(
+                name="Foreign",
+                sku="FOREIGN",
+                description="",
+                selling_price=Decimal("10.00"),
+                unit_cost=Decimal("1.00"),
+                opening_quantity=20,
+                low_stock_threshold=0,
+            ),
+        )
+
+        response = self.dashboard()
+        breakdown = response.context["dashboard"]["stock_breakdown"]
+
+        self.assertEqual(
+            [(line["name"], line["stock_on_hand"], line["current_unit_cost"], line["contribution"]) for line in breakdown],
+            [("Beans", 8, Decimal("4.00"), Decimal("32.00")), ("Rice", 3, Decimal("7.50"), Decimal("22.50"))],
+        )
+        self.assertEqual(response.context["dashboard"]["stock_value"], Decimal("54.50"))
+        self.assertContains(response, "Beans")
+        self.assertContains(response, "Rice")
+        self.assertContains(response, "8 × NGN 4.00 = NGN 32.00")
+        self.assertContains(response, "3 × NGN 7.50 = NGN 22.50")
+        self.assertContains(response, reverse("product_detail", args=[active.pk]))
+        self.assertContains(response, reverse("product_detail", args=[inactive.pk]))
+        self.assertNotContains(response, "0 × NGN 99.00 = NGN 0.00")
+        self.assertNotContains(response, "Foreign")
 
     def test_dashboard_excludes_drafts_voided_records_and_replaced_expense(self):
         product = self.create_product(stock=10)
