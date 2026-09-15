@@ -13,3 +13,9 @@
 - [ ] Naira and decimal values remain machine-readable without losing precision.
 - [ ] Empty, invalid-range, and cross-Business requests behave safely and clearly.
 - [ ] Tests cover filters, boundaries, totals, headers, encoding, injection protection, permissions, and isolation.
+
+## Comments
+
+- Sales report slice accepted at `5de1c1d`, following `acb4416`. One Business-scoped result feeds the HTML and UTF-8 CSV presenters, defaults to the full current Africa/Lagos calendar month, preserves explicit one-sided or inclusive date filters, and exposes completed or voided history without including voided rows in active totals.
+- Sales CSV uses stable headings, ISO dates, two-place machine-readable decimals, and apostrophe-prefixes formula-leading text. Twelve focused tests and the 161-test suite passed with one PostgreSQL-only concurrency test skipped on SQLite; fresh Standards and Spec reviews passed after default-period and malformed-date repairs.
+- Ticket 11 remains open. Purchases, Expenses, stock position, and Product movement reports must reuse the proven filter/export boundary before completion.
