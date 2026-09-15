@@ -527,6 +527,62 @@ footer p {
   color: var(--muted);
 }
 
+.report-totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 0 0 30px;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.report-totals article {
+  padding: 20px;
+  background: var(--surface);
+}
+
+.report-totals h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.report-totals p {
+  margin: 10px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.report-note {
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+.report-table-wrap {
+  overflow-x: auto;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+}
+
+.report-table th,
+.report-table td {
+  padding: 12px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.report-table th {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
 @media (max-width: 720px) {
   .site-header,
   main,
@@ -570,6 +626,10 @@ footer p {
   }
 
   .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-totals {
     grid-template-columns: 1fr;
   }
 
