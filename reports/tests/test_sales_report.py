@@ -1,7 +1,9 @@
 import csv
-from datetime import date
+from datetime import date, datetime, timezone as datetime_timezone
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 from io import StringIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
@@ -274,3 +276,67 @@ class SalesReportRequestTests(TestCase):
 
         self.assertContains(response, "Choose completed or voided Sales.")
         self.assertNotContains(response, "Sale #")
+
+    @override_settings(TIME_ZONE="Africa/Lagos")
+    def test_omitted_dates_default_to_current_lagos_calendar_month_for_html_and_csv(self):
+        with self.subTest("September in Lagos"):
+            utc_now = datetime(2026, 9, 15, 12, 0, tzinfo=datetime_timezone.utc)
+            lagos_today = utc_now.astimezone(ZoneInfo("Africa/Lagos")).date()
+            with patch("reports.sales.timezone.localdate", return_value=lagos_today):
+                included = self.completed_sale(sale_date=date(2026, 9, 30), quantity=1, unit_price="10.00")
+                excluded = self.completed_sale(sale_date=date(2026, 10, 1), quantity=1, unit_price="99.00")
+                html = self.client.get(reverse("reports_sales"))
+                csv_response = self.client.get(reverse("reports_sales_csv"))
+
+        self.assertContains(html, 'name="date_from" value="2026-09-01"')
+        self.assertContains(html, 'name="date_to" value="2026-09-30"')
+        self.assertContains(html, f"Sale #{included.pk}")
+        self.assertNotContains(html, f"Sale #{excluded.pk}")
+        csv_rows = list(csv.reader(StringIO(csv_response.content.decode("utf-8"))))
+        self.assertEqual(csv_rows[1][1], f"Sale #{included.pk}")
+        self.assertEqual(len(csv_rows), 2)
+
+    @override_settings(TIME_ZONE="Africa/Lagos")
+    def test_omitted_dates_use_lagos_month_after_utc_month_boundary(self):
+        utc_now = datetime(2026, 9, 30, 23, 30, tzinfo=datetime_timezone.utc)
+        lagos_today = utc_now.astimezone(ZoneInfo("Africa/Lagos")).date()
+        with patch("reports.sales.timezone.localdate", return_value=lagos_today):
+            included = self.completed_sale(sale_date=date(2026, 10, 1), quantity=1, unit_price="10.00")
+            excluded = self.completed_sale(sale_date=date(2026, 9, 30), quantity=1, unit_price="99.00")
+            html = self.client.get(reverse("reports_sales"))
+            csv_response = self.client.get(reverse("reports_sales_csv"))
+
+        self.assertContains(html, 'name="date_from" value="2026-10-01"')
+        self.assertContains(html, 'name="date_to" value="2026-10-31"')
+        self.assertContains(html, f"Sale #{included.pk}")
+        self.assertNotContains(html, f"Sale #{excluded.pk}")
+        csv_rows = list(csv.reader(StringIO(csv_response.content.decode("utf-8"))))
+        self.assertEqual(csv_rows[1][1], f"Sale #{included.pk}")
+        self.assertEqual(len(csv_rows), 2)
+
+    def test_malformed_dates_are_clear_safe_and_preserve_entered_values(self):
+        self.completed_sale(sale_date=date(2026, 9, 15), quantity=1, unit_price="10.00")
+        params = {"date_from": "not-a-date", "date_to": "2026-09-31"}
+
+        html = self.client.get(reverse("reports_sales"), params)
+        csv_response = self.client.get(reverse("reports_sales_csv"), params)
+        csv_rows = list(csv.reader(StringIO(csv_response.content.decode("utf-8"))))
+
+        self.assertContains(html, "Enter a valid start date.")
+        self.assertContains(html, "Enter a valid end date.")
+        self.assertContains(html, 'name="date_from" value="not-a-date"')
+        self.assertContains(html, 'name="date_to" value="2026-09-31"')
+        self.assertNotContains(html, "Export CSV")
+        self.assertNotContains(html, "Sale #")
+        self.assertEqual(len(csv_rows), 1)
+
+    def test_one_sided_date_filter_does_not_add_an_implicit_bound(self):
+        older = self.completed_sale(sale_date=date(2026, 8, 31), quantity=1, unit_price="10.00")
+        newer = self.completed_sale(sale_date=date(2026, 10, 1), quantity=1, unit_price="12.00")
+
+        response = self.client.get(reverse("reports_sales"), {"date_from": "2026-09-01"})
+
+        self.assertNotContains(response, f"Sale #{older.pk}")
+        self.assertContains(response, f"Sale #{newer.pk}")
+        self.assertContains(response, 'name="date_from" value="2026-09-01"')
+        self.assertContains(response, 'name="date_to" value=""')

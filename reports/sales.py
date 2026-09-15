@@ -4,6 +4,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 
 from sales.models import Sale
 
@@ -22,6 +23,8 @@ class SalesReportFilters:
     date_from: date | None
     date_to: date | None
     errors: tuple[str, ...] = ()
+    date_from_input: str = ""
+    date_to_input: str = ""
 
     @classmethod
     def from_query_params(cls, query_params):
@@ -29,17 +32,31 @@ class SalesReportFilters:
         status = query_params.get("status") or Sale.Status.COMPLETED
         if status not in REPORTABLE_STATUSES:
             errors.append("Choose completed or voided Sales.")
-        date_from = cls._parse_date(query_params.get("date_from"), "Enter a valid start date.", errors)
-        date_to = cls._parse_date(query_params.get("date_to"), "Enter a valid end date.", errors)
+        date_from_input = query_params.get("date_from") or ""
+        date_to_input = query_params.get("date_to") or ""
+        date_from = cls._parse_date(date_from_input, "Enter a valid start date.", errors)
+        date_to = cls._parse_date(date_to_input, "Enter a valid end date.", errors)
+        if not date_from_input and not date_to_input:
+            date_from, date_to = current_month_bounds()
         if date_from and date_to and date_to < date_from:
             errors.append("End date cannot be earlier than start date.")
-        return cls(status=status, date_from=date_from, date_to=date_to, errors=tuple(errors))
+        return cls(
+            status=status,
+            date_from=date_from,
+            date_to=date_to,
+            errors=tuple(errors),
+            date_from_input=date_from_input,
+            date_to_input=date_to_input,
+        )
 
     @staticmethod
     def _parse_date(value, error_message, errors):
         if not value:
             return None
-        parsed = parse_date(value)
+        try:
+            parsed = parse_date(value)
+        except ValueError:
+            parsed = None
         if parsed is None:
             errors.append(error_message)
         return parsed
@@ -60,6 +77,24 @@ class SalesReportFilters:
     @property
     def query_string(self):
         return urlencode(self.query_params)
+
+    @property
+    def date_from_value(self):
+        return self.date_from_input or (self.date_from.isoformat() if self.date_from else "")
+
+    @property
+    def date_to_value(self):
+        return self.date_to_input or (self.date_to.isoformat() if self.date_to else "")
+
+
+def current_month_bounds():
+    today = timezone.localdate()
+    first = today.replace(day=1)
+    if today.month == 12:
+        next_month = today.replace(year=today.year + 1, month=1, day=1)
+    else:
+        next_month = today.replace(month=today.month + 1, day=1)
+    return first, next_month - date.resolution
 
 
 @dataclass(frozen=True)
