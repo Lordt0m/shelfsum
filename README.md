@@ -2,7 +2,7 @@
 
 ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, an authenticated Business home, Owner-only Business settings, Staff Member management, Product creation with traceable opening stock, and draft-to-completed Purchases and Sales. Later vertical slices add Expenses, general Stock Adjustments, reports, an Audit Event browser, fictional demonstration data, and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, and an explainable operational dashboard. Later vertical slices add report exports, a dedicated Audit Event browser, fictional demonstration data, and deployment.
 
 ## Current behaviour
 
@@ -28,7 +28,9 @@ The current application provides the product landing page, a deployment health r
 - Owners and active Staff Members can draft, edit, list, filter, inspect, and complete multi-line Sales using server-rendered forms that remain usable without JavaScript.
 - Completing a Sale deterministically locks its Products, rechecks Stock on Hand, snapshots each Product cost on its Sale line, decreases stock, writes one immutable Sale-origin Stock Movement per line, and records an Audit Event in one transaction.
 - Owners and active Staff Members can record, list, filter, inspect, void, and correct Expenses with controlled categories, positive decimal amounts, immutable history, linked replacements, and audited lifecycle changes.
+- Owners and active Staff Members can preview and record explained manual Stock Adjustments; locked validation prevents negative Stock on Hand and preserves an immutable movement and audit trail.
 - Completed and voided Sales and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement and restores the sold quantities while preserving Sale cost snapshots.
+- The Business home explains the full current Africa/Lagos calendar month with completed Sale revenue and cost snapshots, recorded Expenses, Estimated Profit, current stock value, active low-stock count, and recent scoped Audit Events linked back to their records.
 
 ## Product boundary
 
@@ -88,6 +90,7 @@ A later milestone will provide a read-only Demo Business containing only fiction
 ## Module boundaries
 
 - `businesses` owns membership-based access and the shared Demo Business write rule.
+- `businesses` also owns the authenticated dashboard composition and its read-only, Business-scoped summary query.
 - `catalogue` owns Products, their forms and pages, and Product-creation orchestration.
 - `inventory` owns Stock Adjustments, immutable Stock Movements, and locked stock changes.
 - `auditing` owns append-only Audit Events.

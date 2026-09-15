@@ -6,7 +6,7 @@
   <section class="business-hero" aria-labelledby="page-title">
     <p class="eyebrow">{{ membership.get_role_display }} access</p>
     <h1 id="page-title">{{ business.name }}</h1>
-    <p>Your private Business workspace is ready. Product and activity records will appear here as the next release slices are completed.</p>
+    <p>Operational dashboard for {{ dashboard.period_start }} to {{ dashboard.period_end }} (Africa/Lagos).</p>
     <dl class="business-facts">
       <div><dt>Currency</dt><dd>{{ business.currency }}</dd></div>
       <div><dt>Timezone</dt><dd>{{ business.timezone }}</dd></div>
@@ -17,5 +17,22 @@
       <a class="text-link" href="{% url 'staff_member_list' %}">Staff Members</a>
     {% endif %}
     <a class="text-link" href="{% url 'product_list' %}">View Products</a>
+  </section>
+  <section class="dashboard" aria-labelledby="summary-title">
+    <div class="page-heading"><div><p class="eyebrow">Current month</p><h2 id="summary-title">Explainable summary</h2></div></div>
+    <div class="dashboard-grid">
+      <article><h3>Sales revenue</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.revenue|floatformat:2 }}</p>{% if dashboard.revenue %}<a href="{{ dashboard.sales_url }}">View completed Sales in this period</a>{% else %}<p>No completed Sales in this period.</p>{% endif %}</article>
+      <article><h3>Estimated cost of goods sold</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.cost_of_goods_sold|floatformat:2 }}</p><a href="{{ dashboard.sales_url }}">See completion-time cost snapshots</a></article>
+      <article><h3>Recorded Expenses</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.expenses|floatformat:2 }}</p>{% if dashboard.expenses %}<a href="{{ dashboard.expenses_url }}">View recorded Expenses in this period</a>{% else %}<p>No recorded Expenses in this period.</p>{% endif %}</article>
+      <article><h3>Estimated Profit</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.profit|floatformat:2 }}</p><p>Operational estimate, not accounting, tax, or cash profit. Revenue minus completion-time cost snapshots and recorded Expenses.</p><a href="{{ dashboard.sales_url }}">Explain Sales inputs</a> · <a href="{{ dashboard.expenses_url }}">Explain Expense inputs</a></article>
+      <article><h3>Current stock value</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.stock_value|floatformat:2 }}</p><p>Current balance using positive Stock on Hand and each Product's current unit cost, including inactive Products.</p><a href="{% url 'product_list' %}?status=all">View Product balances</a></article>
+      <article><h3>Low stock</h3><p class="dashboard-value">{{ dashboard.low_stock_count }}</p>{% if dashboard.low_stock_count %}<a href="{{ dashboard.low_stock_url }}">View active low-stock Products</a>{% else %}<p>No active Products are currently low on stock.</p>{% endif %}</article>
+    </div>
+  </section>
+  <section class="dashboard-activity" aria-labelledby="activity-title">
+    <p class="eyebrow">Audit trail</p><h2 id="activity-title">Recent activity</h2>
+    <div class="record-list">
+      {% for event in dashboard.recent_activity %}<div class="record-row"><span><strong>{{ event.summary }}</strong><small>{{ event.created_at }} · {{ event.actor }}</small></span>{% if event.record_url %}<a href="{{ event.record_url }}">View record</a>{% endif %}</div>{% empty %}<p class="empty-state">No recent activity yet.</p>{% endfor %}
+    </div>
   </section>
 {% endblock %}

@@ -18,6 +18,7 @@ from businesses.services import (
     add_staff_member,
     deactivate_staff_member,
 )
+from businesses.dashboard import dashboard_context
 
 
 @login_required
@@ -54,11 +55,9 @@ def create_business(request):
 
 @membership_required
 def business_home(request):
-    return render(
-        request,
-        "businesses/home.html",
-        {"business": request.business, "membership": request.membership},
-    )
+    context = {"business": request.business, "membership": request.membership}
+    context.update(dashboard_context(business=request.business))
+    return render(request, "businesses/home.html", context)
 
 
 @owner_required
