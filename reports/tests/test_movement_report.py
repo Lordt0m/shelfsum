@@ -214,6 +214,32 @@ class MovementReportRequestTests(TestCase):
         )
         self.assertContains(selected, f'<option value="{own.pk}" selected>Own')
 
+    def test_unfiltered_html_and_csv_isolate_foreign_business_movements(self):
+        own = self.product(name="Own unfiltered", sku="OWN-U")
+        other_business = Business.objects.create(name="Other Shop")
+        other_owner = get_user_model().objects.create_user(
+            email="other-unfiltered@example.com", password="password"
+        )
+        Membership.objects.create(
+            user=other_owner, business=other_business, role=Membership.Role.OWNER
+        )
+        foreign = self.product(
+            name="Foreign unfiltered", sku="FOREIGN-U", business=other_business
+        )
+        self.adjustment(
+            own, 2, datetime(2026, 9, 15, 10, 0, tzinfo=datetime_timezone.utc)
+        )
+        self.adjustment(
+            foreign, 9, datetime(2026, 9, 15, 11, 0, tzinfo=datetime_timezone.utc)
+        )
+        params = {"date_from": "2026-09-01", "date_to": "2026-09-30"}
+        html = self.client.get(reverse("reports_movements"), params)
+        _, rows = self.csv_rows(params)
+
+        self.assertContains(html, own.name)
+        self.assertNotContains(html, foreign.name)
+        self.assertEqual([row[1] for row in rows[1:]], [own.name])
+
     def test_html_and_csv_parity_stable_headings_iso_lagos_offset_integer_and_safe_text(self):
         product = self.product(name="Café", sku="")
         movement = self.adjustment(product, -2, datetime(2026, 9, 15, 10, 5, tzinfo=datetime_timezone.utc))
