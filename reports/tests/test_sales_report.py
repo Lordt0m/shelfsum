@@ -79,7 +79,7 @@ class SalesReportRequestTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f'<a href="{reverse("reports_sales")}">Reports</a>',
+            f'<a href="{reverse("reports_index")}">Reports</a>',
             html=True,
         )
         self.assertContains(response, f"Sale #{first.pk}")
@@ -88,6 +88,30 @@ class SalesReportRequestTests(TestCase):
         self.assertContains(response, "32.00")
         self.assertContains(response, "9.00")
         self.assertContains(response, "23.00")
+
+    def test_main_reports_navigation_reaches_directory_with_sales_and_purchase_reports(self):
+        main_response = self.client.get(reverse("business_home"))
+
+        self.assertEqual(main_response.status_code, 200)
+        self.assertContains(
+            main_response,
+            f'<a href="{reverse("reports_index")}">Reports</a>',
+            html=True,
+        )
+
+        directory_response = self.client.get(reverse("reports_index"))
+
+        self.assertEqual(directory_response.status_code, 200)
+        self.assertContains(
+            directory_response,
+            f'<a href="{reverse("reports_sales")}">',
+            html=False,
+        )
+        self.assertContains(
+            directory_response,
+            f'<a href="{reverse("reports_purchases")}">',
+            html=False,
+        )
 
     def test_default_is_completed_and_voided_history_is_explicitly_excluded_from_active_totals(self):
         completed = self.completed_sale(
@@ -189,6 +213,26 @@ class SalesReportRequestTests(TestCase):
                 "'@unsafe reference",
                 "'@unsafe customer",
             }.issubset(text_cells)
+        )
+
+    def test_csv_neutralizes_formulas_after_leading_whitespace_control_characters(self):
+        prefixes = ("\t", "\r", "\n")
+        for prefix in prefixes:
+            self.completed_sale(
+                sale_date=date(2026, 9, 15),
+                quantity=1,
+                unit_price="10.00",
+                reference=f"{prefix}=SUM(A1:A2)",
+            )
+
+        response = self.client.get(reverse("reports_sales_csv"))
+        rows = list(csv.reader(StringIO(response.content.decode("utf-8"))))
+
+        reference_cells = {row[1] for row in rows[1:]}
+        self.assertTrue(
+            {f"'{prefix}=SUM(A1:A2)" for prefix in prefixes}.issubset(
+                reference_cells
+            )
         )
 
     def test_report_access_follows_active_membership_for_html_and_csv(self):

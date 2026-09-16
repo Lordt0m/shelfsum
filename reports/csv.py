@@ -5,7 +5,7 @@ from django.http import HttpResponse
 
 def safe_csv_text(value):
     value = str(value)
-    return f"'{value}" if value[:1] in {"=", "+", "-", "@"} else value
+    return f"'{value}" if value.lstrip()[:1] in {"=", "+", "-", "@"} else value
 
 
 def csv_response(*, headings, filename, rows):
