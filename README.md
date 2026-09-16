@@ -2,7 +2,7 @@
 
 ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, an explainable operational dashboard, and filterable Sales, Purchase, Expense, current stock-position, and Product-movement reports with spreadsheet-safe CSV exports. Later vertical slices add a dedicated Audit Event browser, fictional demonstration data, and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, an explainable operational dashboard, a dedicated Audit Event browser, and filterable Sales, Purchase, Expense, current stock-position, and Product-movement reports with spreadsheet-safe CSV exports. Later vertical slices add fictional demonstration data and deployment.
 
 ## Current behaviour
 
@@ -36,6 +36,7 @@ The current application provides the product landing page, a deployment health r
 - Owners and active Staff Members can inspect recorded or voided Expenses through inclusive date filters. The report shows recorded Expense totals, excludes voided originals from active totals while counting a recorded replacement once, and exports exactly its active result set as UTF-8 CSV with formula-leading text neutralized.
 - Owners and active Staff Members can inspect a current stock-position snapshot for active, inactive, or all Products and positive, low, zero, or all stock states. It sums exactly the displayed quantity-by-current-unit-cost rows, includes inactive positive stock in its default total, and exports the identical result as UTF-8 CSV with formula-leading text neutralized. Current costs do not reconstruct historical inventory value.
 - Owners and active Staff Members can inspect Product movements for a full or explicitly bounded Africa/Lagos local period, filter by movement kind and current-Business Product, see linked origins and voided-document reversals, and export the identical signed result as UTF-8 CSV with explicit Lagos offsets and formula-leading text neutralized.
+- Owners and active Staff Members can inspect current-Business Audit Events, including deactivated actors, newest first; actor, action, and one-sided or inclusive Africa/Lagos date filters preserve invalid values without exposing records or choices from another Business. The browser is also available to read-only Demo Business members.
 
 ## Product boundary
 
@@ -98,7 +99,7 @@ A later milestone will provide a read-only Demo Business containing only fiction
 - `businesses` also owns the authenticated dashboard composition and its read-only, Business-scoped summary query.
 - `catalogue` owns Products, their forms and pages, and Product-creation orchestration.
 - `inventory` owns Stock Adjustments, immutable Stock Movements, and locked stock changes.
-- `auditing` owns append-only Audit Events.
+- `auditing` owns append-only Audit Events and the read-only, Business-scoped Audit Event browser.
 - `purchases` owns draft Purchase entry and the transactional `complete_purchase` and `void_purchase` seams; Purchase-origin and reversal Stock Movements remain in `inventory`.
 - `sales` owns draft Sale entry and the transactional `complete_sale` and `void_sale` seams; Sale-origin and reversal Stock Movements remain in `inventory`.
 - `expenses` owns immutable Expense records, request forms, date/status filters, and audited void-and-replace correction workflows.

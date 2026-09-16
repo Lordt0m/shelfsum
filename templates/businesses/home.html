@@ -39,6 +39,7 @@
   </section>
   <section class="dashboard-activity" aria-labelledby="activity-title">
     <p class="eyebrow">Audit trail</p><h2 id="activity-title">Recent activity</h2>
+    <p><a href="{% url 'audit_event_list' %}">Browse all Audit Events</a></p>
     <div class="record-list">
       {% for event in dashboard.recent_activity %}<div class="record-row"><span><strong>{{ event.summary }}</strong><small>{{ event.created_at }} · {{ event.actor }}</small></span>{% if event.record_url %}<a href="{{ event.record_url }}">View record</a>{% endif %}</div>{% empty %}<p class="empty-state">No recent activity yet.</p>{% endfor %}
     </div>

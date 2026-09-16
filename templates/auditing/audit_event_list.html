@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Audit Events | ShelfSum{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Business audit trail</p><h1>Audit Events</h1><p>Times are shown in Africa/Lagos.</p></div></section>
+<form method="get" class="filter-bar">
+  <div class="field"><label for="actor">Actor</label><select id="actor" name="actor"><option value="">All actors</option>{% if browser.filters.actor_is_invalid %}<option value="{{ browser.filters.actor_input }}" selected>{{ browser.filters.actor_input }}</option>{% endif %}{% for actor_id, actor_email in browser.actors %}<option value="{{ actor_id }}"{% if browser.filters.actor_id == actor_id %} selected{% endif %}>{{ actor_email }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="action">Action</label><select id="action" name="action"><option value="">All actions</option>{% if browser.filters.action_input and browser.filters.action_input not in browser.actions %}<option value="{{ browser.filters.action_input }}" selected>{{ browser.filters.action_input }}</option>{% endif %}{% for action in browser.actions %}<option value="{{ action }}"{% if browser.filters.action == action %} selected{% endif %}>{{ action }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="date_from">From</label><input id="date_from" type="date" name="date_from" value="{{ browser.filters.date_from_value }}"></div>
+  <div class="field"><label for="date_to">To</label><input id="date_to" type="date" name="date_to" value="{{ browser.filters.date_to_value }}"></div>
+  <button class="button" type="submit">Filter</button>
+</form>
+{% for error in browser.filters.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+{% if browser.filters.is_valid %}{% if browser.rows %}<div class="report-table-wrap"><table class="report-table"><caption>Audit Events matching the selected filters</caption><thead><tr><th scope="col">Lagos timestamp</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Summary</th></tr></thead><tbody>{% for row in browser.rows %}<tr><td>{{ row.lagos_timestamp_display }}</td><td>{{ row.event.actor.email }}</td><td>{{ row.event.action }}</td><td>{{ row.event.summary }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="empty-state">No Audit Events match these filters.</p>{% endif %}{% endif %}
+{% endblock %}
