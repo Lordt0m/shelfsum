@@ -146,6 +146,10 @@ class MovementReportRow:
         return timezone.localtime(self.movement.created_at, LAGOS)
 
     @property
+    def lagos_timestamp_display(self):
+        return self.lagos_timestamp.strftime("%Y-%m-%d %H:%M:%S %z")
+
+    @property
     def origin_label(self):
         movement = self.movement
         if movement.kind == StockMovement.Kind.ADJUSTMENT:

@@ -132,6 +132,22 @@ class MovementReportRequestTests(TestCase):
         self.assertContains(response, "2026-09-01 00:00")
         self.assertContains(response, "2026-09-30 23:59")
 
+    @override_settings(TIME_ZONE="UTC")
+    def test_html_lagos_timestamp_is_not_relocalized_by_active_settings(self):
+        product = self.product()
+        self.adjustment(
+            product,
+            1,
+            datetime(2026, 9, 15, 10, 0, tzinfo=datetime_timezone.utc),
+        )
+        params = {"date_from": "2026-09-15", "date_to": "2026-09-15"}
+        html = self.client.get(reverse("reports_movements"), params)
+        csv_response, rows = self.csv_rows(params)
+        self.assertContains(html, "2026-09-15 11:00:00 +0100")
+        self.assertNotContains(html, "2026-09-15 10:00:00 +0000")
+        self.assertEqual(rows[1][0], "2026-09-15T11:00:00+01:00")
+        self.assertEqual(csv_response["Content-Type"], "text/csv; charset=utf-8")
+
     @override_settings(TIME_ZONE="Africa/Lagos")
     def test_omitted_dates_default_to_current_lagos_month_from_current_instant(self):
         now = datetime(2026, 9, 30, 23, 30, tzinfo=datetime_timezone.utc)
