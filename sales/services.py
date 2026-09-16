@@ -22,6 +22,66 @@ def _lock_sale_lines(*, sale):
     )
 
 
+def _validated_draft_lines(*, business, formset):
+    """Extract and recheck create intent against the explicit Business."""
+    line_data = []
+    for form in formset.forms:
+        cleaned_data = getattr(form, "cleaned_data", None)
+        if not cleaned_data or cleaned_data.get("DELETE"):
+            continue
+        product = cleaned_data.get("product")
+        if product is None:
+            continue
+        line_data.append(
+            (
+                product.pk,
+                cleaned_data.get("quantity"),
+                cleaned_data.get("unit_price"),
+            )
+        )
+
+    if not line_data:
+        raise ValidationError("Add at least one Product line.")
+
+    products = {
+        product.pk: product
+        for product in Product.objects.filter(
+            pk__in={product_id for product_id, _, _ in line_data},
+            business=business,
+        ).order_by("pk")
+    }
+    if len(products) != len({product_id for product_id, _, _ in line_data}):
+        raise ValidationError("The Product must belong to this Business.")
+    if any(not product.is_active for product in products.values()):
+        raise ValidationError(
+            "Every line must reference an active Product in this Business."
+        )
+    return line_data, products
+
+
+@transaction.atomic
+def create_draft_sale(*, business, actor, form, formset):
+    """Create a draft Sale and its lines as one guarded transaction."""
+    ensure_business_write_allowed(business=business, actor=actor)
+    line_data, products = _validated_draft_lines(business=business, formset=formset)
+
+    sale = Sale(
+        business=business,
+        creator=actor,
+        status=Sale.Status.DRAFT,
+        **{field: form.cleaned_data[field] for field in form.Meta.fields},
+    )
+    sale.save()
+    for product_id, quantity, unit_price in line_data:
+        SaleLine.objects.create(
+            sale=sale,
+            product=products[product_id],
+            quantity=quantity,
+            unit_price=unit_price,
+        )
+    return sale
+
+
 @transaction.atomic
 def save_draft_sale(*, business, actor, sale, form, formset):
     """Persist an already-validated draft edit while serializing completion.

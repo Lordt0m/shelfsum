@@ -5,7 +5,7 @@ from django.utils.dateparse import parse_date
 from businesses.access import demo_business_read_only, membership_required
 from sales.forms import SaleForm, SaleLineFormSet
 from sales.models import Sale
-from sales.services import complete_sale, save_draft_sale, void_sale
+from sales.services import complete_sale, create_draft_sale, save_draft_sale, void_sale
 
 
 def _sale_post_data(request):
@@ -54,9 +54,17 @@ def sale_create(request):
         if not _draft_line_data(formset):
             form.add_error(None, "Add at least one Product line.")
         else:
-            sale = form.save(commit=False); sale.business = request.business; sale.creator = request.user; sale.save()
-            formset.instance = sale; formset.save()
-            return redirect("sale_detail", sale_id=sale.pk)
+            try:
+                sale = create_draft_sale(
+                    business=request.business,
+                    actor=request.user,
+                    form=form,
+                    formset=formset,
+                )
+            except ValidationError as error:
+                form.add_error(None, error)
+            else:
+                return redirect("sale_detail", sale_id=sale.pk)
     return render(request, "sales/sale_form.html", {"form": form, "formset": formset})
 
 

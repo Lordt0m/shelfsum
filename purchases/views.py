@@ -5,7 +5,12 @@ from django.utils.dateparse import parse_date
 from businesses.access import demo_business_read_only, membership_required
 from purchases.forms import PurchaseForm, PurchaseLineFormSet
 from purchases.models import Purchase
-from purchases.services import complete_purchase, save_draft_purchase, void_purchase
+from purchases.services import (
+    complete_purchase,
+    create_draft_purchase,
+    save_draft_purchase,
+    void_purchase,
+)
 
 
 def _draft_line_data(formset):
@@ -88,13 +93,17 @@ def purchase_create(request):
         if not _draft_line_data(formset):
             form.add_error(None, "Add at least one Product line.")
         else:
-            purchase = form.save(commit=False)
-            purchase.business = request.business
-            purchase.creator = request.user
-            purchase.save()
-            formset.instance = purchase
-            formset.save()
-            return redirect("purchase_detail", purchase_id=purchase.pk)
+            try:
+                purchase = create_draft_purchase(
+                    business=request.business,
+                    actor=request.user,
+                    form=form,
+                    formset=formset,
+                )
+            except ValidationError as error:
+                form.add_error(None, error)
+            else:
+                return redirect("purchase_detail", purchase_id=purchase.pk)
 
     return render(
         request,
