@@ -1,14 +1,16 @@
 from datetime import datetime
 from decimal import Decimal
 from io import StringIO
+from threading import Barrier, Thread
+from unittest import skipUnless
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.core.management import CommandError, call_command
-from django.db import models
-from django.test import TestCase, override_settings
+from django.db import close_old_connections, connection, models
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from auditing.models import AuditEvent
@@ -232,6 +234,28 @@ class DemoSeedCommandTests(TestCase):
         staff.refresh_from_db()
         self.assertTrue(staff.check_password("audit-drift-password"))
 
+    def test_swapped_product_audit_targets_are_demo_drift_before_password_reset(self):
+        seed_demo_business()
+        events = list(
+            AuditEvent.objects.filter(action="product.created").order_by("pk")[:2]
+        )
+        first_identifier, second_identifier = events[0].object_identifier, events[1].object_identifier
+        models.QuerySet.update(
+            AuditEvent.objects.filter(pk=events[0].pk), object_identifier=second_identifier
+        )
+        models.QuerySet.update(
+            AuditEvent.objects.filter(pk=events[1].pk), object_identifier=first_identifier
+        )
+        staff = get_user_model().objects.get(email=DEMO_STAFF_EMAIL)
+        staff.set_password("audit-target-drift-password")
+        staff.save(update_fields=["password"])
+
+        with self.assertRaisesRegex(DemoSeedError, "Audit Event attribution"):
+            seed_demo_business()
+
+        staff.refresh_from_db()
+        self.assertTrue(staff.check_password("audit-target-drift-password"))
+
     def test_fixed_reference_period_drives_dashboard_and_reports(self):
         seed_demo_business()
         business = Business.objects.get(name=DEMO_BUSINESS_NAME)
@@ -271,3 +295,55 @@ class DemoSeedCommandTests(TestCase):
         self.assertEqual((len(expenses.rows), expenses.total), (1, Decimal("275000.00")))
         self.assertEqual((len(stock.rows), stock.total), (4, Decimal("59000.00")))
         self.assertEqual((len(movements.rows), movements.net_change), (18, 87))
+
+
+@skipUnless(
+    connection.vendor == "postgresql",
+    "Release verification only: requires PostgreSQL row locks and independent database connections.",
+)
+class DemoSeedPostgreSQLConcurrencyTests(TransactionTestCase):
+    """Verify the sentinel lock serializes two first-run seed commands."""
+
+    reset_sequences = True
+
+    def test_simultaneous_first_runs_both_verify_one_canonical_dataset(self):
+        start = Barrier(2)
+        errors = []
+        results = []
+
+        def worker():
+            close_old_connections()
+            try:
+                start.wait(timeout=10)
+                results.append(seed_demo_business().pk)
+            except Exception as error:
+                errors.append(error)
+            finally:
+                close_old_connections()
+
+        first = Thread(target=worker, name="demo-seed-1")
+        second = Thread(target=worker, name="demo-seed-2")
+        first.start()
+        second.start()
+        first.join(timeout=90)
+        second.join(timeout=90)
+
+        self.assertFalse(first.is_alive())
+        self.assertFalse(second.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(len(results), 2)
+        self.assertEqual(Business.objects.filter(name=DEMO_BUSINESS_NAME).count(), 1)
+        self.assertEqual(
+            get_user_model()
+            .objects.filter(email__in=[DEMO_OWNER_EMAIL, DEMO_STAFF_EMAIL])
+            .count(),
+            2,
+        )
+        business = Business.objects.get(name=DEMO_BUSINESS_NAME)
+        self.assertTrue(business.is_demo)
+        self.assertEqual(Membership.objects.filter(business=business).count(), 2)
+        self.assertEqual(Product.objects.filter(business=business).count(), 5)
+        self.assertEqual(Purchase.objects.filter(business=business).count(), 3)
+        self.assertEqual(Sale.objects.filter(business=business).count(), 3)
+        self.assertEqual(StockMovement.objects.filter(business=business).count(), 18)
+        self.assertEqual(AuditEvent.objects.filter(business=business).count(), 19)

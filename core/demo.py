@@ -11,6 +11,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
 from auditing.models import AuditEvent
@@ -515,23 +516,111 @@ def _verify_canonical_dataset(*, business, owner, staff):
         if net_by_product[product.pk] != product.stock_on_hand:
             _fail(f"Stock Movement reconciliation failed for {product.sku}")
 
-    expected_events = [("business.created", owner.pk, "businesses.Business", str(business.pk))]
-    expected_events.append(("membership.staff_added", owner.pk, "businesses.Membership", str(by_user[staff.pk].pk)))
-    expected_events.extend(("product.created", owner.pk, "catalogue.Product", str(product.pk)) for product in products)
-    expected_events.append(("product.deactivated", owner.pk, "catalogue.Product", str(product_by_sku["DEMO-PAP-090"].pk)))
-    expected_events.extend(("purchase.completed", staff.pk, "purchases.Purchase", str(purchase.pk)) for purchase in purchases)
-    expected_events.append(("purchase.voided", owner.pk, "purchases.Purchase", str(purchase_by_reference["DEMO-PUR-VOID"].pk)))
-    expected_events.extend(("sale.completed", staff.pk, "sales.Sale", str(sale.pk)) for sale in sales)
-    expected_events.append(("sale.voided", owner.pk, "sales.Sale", str(sale_by_reference["DEMO-SAL-VOID"].pk)))
-    expected_events.append(("expense.recorded", staff.pk, "expenses.Expense", str(original.pk)))
-    expected_events.append(("expense.corrected", owner.pk, "expenses.Expense", str(replacement.pk)))
-    expected_events.append(("stock.adjusted", staff.pk, "inventory.StockAdjustment", str(manual[0].pk)))
-    actual_events = [
-        (event.action, event.actor_id, event.object_type, event.object_identifier)
-        for event in AuditEvent.objects.filter(business=business)
+    expected_events = [
+        (
+            "business.created",
+            owner.pk,
+            "businesses.Business",
+            str(business.pk),
+            f"Created Business {business.name}.",
+        ),
+        (
+            "membership.staff_added",
+            owner.pk,
+            "businesses.Membership",
+            str(by_user[staff.pk].pk),
+            f"Added Staff Member {staff.email}.",
+        ),
     ]
-    if Counter(actual_events) != Counter(expected_events):
-        _fail("Audit Event attribution or affected-object identity drifted")
+    expected_events.extend([
+        (
+            "product.created",
+            owner.pk,
+            "catalogue.Product",
+            str(product_by_sku[details["sku"]].pk),
+            f"Created Product {product_by_sku[details['sku']].name} with {details['opening_quantity']} units.",
+        )
+        for details in _PRODUCTS
+    ])
+    inactive = product_by_sku["DEMO-PAP-090"]
+    expected_events.append(
+        (
+            "product.deactivated",
+            owner.pk,
+            "catalogue.Product",
+            str(inactive.pk),
+            f"Deactivated Product {inactive.name}.",
+        )
+    )
+    expected_events.extend(
+        (
+            "purchase.completed",
+            staff.pk,
+            "purchases.Purchase",
+            str(purchase.pk),
+            f"Completed Purchase {purchase.pk} for {purchase.total}.",
+        )
+        for purchase in purchases
+    )
+    voided_purchase = purchase_by_reference["DEMO-PUR-VOID"]
+    expected_events.append(
+        (
+            "purchase.voided",
+            owner.pk,
+            "purchases.Purchase",
+            str(voided_purchase.pk),
+            f"Voided Purchase {voided_purchase.pk} for {voided_purchase.total}.",
+        )
+    )
+    expected_events.extend(
+        (
+            "sale.completed",
+            staff.pk,
+            "sales.Sale",
+            str(sale.pk),
+            f"Completed Sale {sale.pk} for {sale.total}.",
+        )
+        for sale in sales
+    )
+    voided_sale = sale_by_reference["DEMO-SAL-VOID"]
+    expected_events.append(
+        (
+            "sale.voided",
+            owner.pk,
+            "sales.Sale",
+            str(voided_sale.pk),
+            f"Voided Sale {voided_sale.pk} for {voided_sale.total}.",
+        )
+    )
+    expected_events.extend([
+        (
+            "expense.recorded",
+            staff.pk,
+            "expenses.Expense",
+            str(original.pk),
+            f"Recorded Expense: {original.description} ({original.amount})",
+        ),
+        (
+            "expense.corrected",
+            owner.pk,
+            "expenses.Expense",
+            str(replacement.pk),
+            f"Corrected Expense {original.pk} with Expense {replacement.pk}.",
+        ),
+        (
+            "stock.adjusted",
+            staff.pk,
+            "inventory.StockAdjustment",
+            str(manual[0].pk),
+            f"Adjusted {manual[0].product.name} by {manual[0].quantity_change} units ({manual[0].get_reason_display()}).",
+        ),
+    ])
+    actual_events = [
+        (event.action, event.actor_id, event.object_type, event.object_identifier, event.summary)
+        for event in AuditEvent.objects.filter(business=business).order_by("pk")
+    ]
+    if actual_events != expected_events:
+        _fail("Audit Event attribution, affected-object identity, or summary drifted")
 
 
 @transaction.atomic
@@ -543,6 +632,8 @@ def seed_demo_business():
     partially change credentials.
     """
     user_model = get_user_model()
+    business_content_type = ContentType.objects.get_for_model(Business)
+    ContentType.objects.select_for_update().get(pk=business_content_type.pk)
     business_matches = list(
         Business.objects.select_for_update()
         .filter(name=DEMO_BUSINESS_NAME)
