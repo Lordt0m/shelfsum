@@ -13,4 +13,6 @@ urlpatterns = [
     path("expenses.csv", views.expense_report_csv, name="reports_expenses_csv"),
     path("stock-position/", views.stock_position_report, name="reports_stock_position"),
     path("stock-position.csv", views.stock_position_report_csv, name="reports_stock_position_csv"),
+    path("movements/", views.movement_report, name="reports_movements"),
+    path("movements.csv", views.movement_report_csv, name="reports_movements_csv"),
 ]

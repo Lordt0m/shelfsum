@@ -9,6 +9,7 @@ from reports.stock_position import (
     StockPositionReportFilters,
     build_stock_position_report,
 )
+from reports.movement import MovementReportFilters, build_movement_report
 
 
 CSV_HEADINGS = ("Sale date", "Sale reference / ID", "Customer", "Status", "Revenue", "Estimated COGS", "Estimated gross margin")
@@ -62,6 +63,15 @@ STOCK_POSITION_CSV_HEADINGS = (
     "Stock on Hand",
     "Current unit cost",
     "Current stock value",
+)
+
+MOVEMENT_CSV_HEADINGS = (
+    "Lagos timestamp",
+    "Product",
+    "SKU",
+    "Kind",
+    "Quantity change",
+    "Origin",
 )
 
 
@@ -175,6 +185,42 @@ def stock_position_report_csv(request):
                 str(row.product.stock_on_hand),
                 f"{row.product.unit_cost:.2f}",
                 f"{row.value:.2f}",
+            )
+            for row in report.rows
+        ),
+    )
+
+
+def _movement_report(request):
+    filters = MovementReportFilters.from_query_params(
+        request.GET, business=request.business
+    )
+    return build_movement_report(business=request.business, filters=filters)
+
+
+@membership_required
+def movement_report(request):
+    return render(
+        request,
+        "reports/movement_report.html",
+        {"report": _movement_report(request)},
+    )
+
+
+@membership_required
+def movement_report_csv(request):
+    report = _movement_report(request)
+    return csv_response(
+        headings=MOVEMENT_CSV_HEADINGS,
+        filename="product-movements-report.csv",
+        rows=(
+            (
+                row.lagos_timestamp.isoformat(),
+                safe_csv_text(row.product.name),
+                safe_csv_text(row.sku),
+                safe_csv_text(row.kind_label),
+                str(row.movement.quantity_change),
+                safe_csv_text(row.origin_label),
             )
             for row in report.rows
         ),
