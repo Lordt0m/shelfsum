@@ -5,6 +5,10 @@ from reports.csv import csv_response, safe_csv_text
 from reports.expense import ExpenseReportFilters, build_expense_report
 from reports.purchase import PurchaseReportFilters, build_purchase_report
 from reports.sales import SalesReportFilters, build_sales_report
+from reports.stock_position import (
+    StockPositionReportFilters,
+    build_stock_position_report,
+)
 
 
 CSV_HEADINGS = ("Sale date", "Sale reference / ID", "Customer", "Status", "Revenue", "Estimated COGS", "Estimated gross margin")
@@ -49,6 +53,15 @@ PURCHASE_CSV_HEADINGS = (
     "Supplier",
     "Status",
     "Quantity by unit cost total",
+)
+
+STOCK_POSITION_CSV_HEADINGS = (
+    "Product name",
+    "SKU",
+    "Active state",
+    "Stock on Hand",
+    "Current unit cost",
+    "Current stock value",
 )
 
 
@@ -128,6 +141,40 @@ def purchase_report_csv(request):
                 safe_csv_text(row.supplier),
                 safe_csv_text(row.purchase.get_status_display()),
                 f"{row.total:.2f}",
+            )
+            for row in report.rows
+        ),
+    )
+
+
+def _stock_position_report(request):
+    filters = StockPositionReportFilters.from_query_params(request.GET)
+    return build_stock_position_report(business=request.business, filters=filters)
+
+
+@membership_required
+def stock_position_report(request):
+    return render(
+        request,
+        "reports/stock_position_report.html",
+        {"report": _stock_position_report(request)},
+    )
+
+
+@membership_required
+def stock_position_report_csv(request):
+    report = _stock_position_report(request)
+    return csv_response(
+        headings=STOCK_POSITION_CSV_HEADINGS,
+        filename="stock-position-report.csv",
+        rows=(
+            (
+                safe_csv_text(row.product.name),
+                safe_csv_text(row.sku),
+                safe_csv_text(row.active_state),
+                str(row.product.stock_on_hand),
+                f"{row.product.unit_cost:.2f}",
+                f"{row.value:.2f}",
             )
             for row in report.rows
         ),
