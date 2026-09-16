@@ -6,7 +6,14 @@ from unittest.mock import patch
 
 from auditing.models import AuditEvent
 from businesses.models import Business, Membership
-from businesses.services import MembershipAssignmentError, add_staff_member, deactivate_staff_member
+from businesses.services import (
+    BusinessCreationError,
+    MembershipAssignmentError,
+    add_staff_member,
+    create_business_for_owner,
+    deactivate_staff_member,
+    update_business_settings,
+)
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
@@ -32,6 +39,10 @@ class BusinessCreationTests(TestCase):
         self.assertRedirects(response, reverse("business_home"))
         self.assertEqual(membership.role, Membership.Role.OWNER)
         self.assertEqual(membership.business.name, "Balogun Corner Shop")
+        event = AuditEvent.objects.get(business=membership.business)
+        self.assertEqual(event.actor, self.user)
+        self.assertEqual(event.action, "business.created")
+        self.assertEqual(event.object_identifier, str(membership.business.pk))
 
     def test_existing_member_cannot_create_a_second_business_with_crafted_post(self):
         business = Business.objects.create(name="First Shop")
@@ -43,6 +54,41 @@ class BusinessCreationTests(TestCase):
 
         self.assertRedirects(response, reverse("business_home"))
         self.assertEqual(Business.objects.count(), 1)
+
+    def test_creation_service_rejects_any_existing_membership_with_stable_error(self):
+        business = Business.objects.create(name="First Shop")
+        Membership.objects.create(
+            user=self.user, business=business, role=Membership.Role.OWNER
+        )
+
+        with self.assertRaisesRegex(
+            BusinessCreationError, r"Your account already belongs to a Business\."
+        ):
+            create_business_for_owner(
+                actor=self.user,
+                name="Second Shop",
+                phone_number="08000000000",
+                address="Lagos",
+            )
+
+        self.assertEqual(Business.objects.count(), 1)
+
+    def test_creation_service_rolls_back_business_and_membership_when_audit_fails(self):
+        with patch(
+            "businesses.services.record_audit_event",
+            side_effect=RuntimeError("audit unavailable"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "audit unavailable"):
+                create_business_for_owner(
+                    actor=self.user,
+                    name="Balogun Corner Shop",
+                    phone_number="08012345678",
+                    address="Lagos",
+                )
+
+        self.assertFalse(Business.objects.exists())
+        self.assertFalse(Membership.objects.exists())
+        self.assertFalse(AuditEvent.objects.exists())
 
     def test_inactive_member_gets_stable_denial_instead_of_redirect_loop(self):
         business = Business.objects.create(name="Former Shop")
@@ -99,6 +145,25 @@ class BusinessAccessTests(TestCase):
         self.business.refresh_from_db()
         self.assertEqual(self.business.name, "Updated Shop")
         self.assertEqual(self.business.address, "Ikeja")
+        event = AuditEvent.objects.get(business=self.business)
+        self.assertEqual(event.actor, self.owner)
+        self.assertEqual(event.action, "business.updated")
+        self.assertNotIn("080", event.summary)
+        self.assertNotIn("Ikeja", event.summary)
+
+    def test_settings_form_errors_remain_on_the_form_without_writing(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            reverse("business_settings"),
+            {"name": "", "phone_number": "08012345678", "address": "Ikeja"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This field is required.")
+        self.business.refresh_from_db()
+        self.assertEqual(self.business.name, "Balogun Corner Shop")
+        self.assertFalse(AuditEvent.objects.filter(business=self.business).exists())
 
     def test_staff_member_cannot_view_or_update_business_settings(self):
         self.client.force_login(self.staff)
@@ -126,6 +191,85 @@ class BusinessAccessTests(TestCase):
         self.assertContains(response, "read-only", status_code=403)
         self.business.refresh_from_db()
         self.assertEqual(self.business.name, "Balogun Corner Shop")
+
+    def test_settings_service_rejects_demo_staff_inactive_and_foreign_actors(self):
+        other_owner = get_user_model().objects.create_user(
+            email="other-owner@example.com", password="safe-password-123"
+        )
+        Membership.objects.create(
+            user=other_owner,
+            business=Business.objects.create(name="Other Shop"),
+            role=Membership.Role.OWNER,
+        )
+        inactive_owner = get_user_model().objects.create_user(
+            email="inactive-owner@example.com", password="safe-password-123"
+        )
+        Membership.objects.create(
+            user=inactive_owner,
+            business=self.business,
+            role=Membership.Role.STAFF,
+            is_active=False,
+        )
+
+        cases = (
+            self.staff,
+            other_owner,
+            inactive_owner,
+        )
+        for actor in cases:
+            with self.subTest(actor=actor.email), self.assertRaises(PermissionDenied):
+                update_business_settings(
+                    business=self.business,
+                    actor=actor,
+                    name="Changed Shop",
+                    phone_number="08000000000",
+                    address="Ikeja",
+                )
+
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+        with self.assertRaises(PermissionDenied):
+            update_business_settings(
+                business=self.business,
+                actor=self.owner,
+                name="Changed Demo",
+                phone_number="",
+                address="",
+            )
+        self.business.refresh_from_db()
+        self.assertEqual(self.business.name, "Balogun Corner Shop")
+
+    def test_settings_service_noop_does_not_emit_an_audit_event(self):
+        updated = update_business_settings(
+            business=self.business,
+            actor=self.owner,
+            name=self.business.name,
+            phone_number=self.business.phone_number,
+            address=self.business.address,
+        )
+
+        self.assertEqual(updated.pk, self.business.pk)
+        self.assertFalse(AuditEvent.objects.filter(business=self.business).exists())
+
+    def test_settings_service_rolls_back_changes_when_audit_fails(self):
+        with patch(
+            "businesses.services.record_audit_event",
+            side_effect=RuntimeError("audit unavailable"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "audit unavailable"):
+                update_business_settings(
+                    business=self.business,
+                    actor=self.owner,
+                    name="Should Roll Back",
+                    phone_number="08000000000",
+                    address="Ikeja",
+                )
+
+        self.business.refresh_from_db()
+        self.assertEqual(self.business.name, "Balogun Corner Shop")
+        self.assertEqual(self.business.phone_number, "")
+        self.assertEqual(self.business.address, "")
+        self.assertFalse(AuditEvent.objects.filter(business=self.business).exists())
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])

@@ -1,7 +1,6 @@
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect, render
 
 from businesses.access import (
@@ -14,9 +13,12 @@ from businesses.access import (
 from businesses.forms import BusinessForm, StaffMemberForm
 from businesses.models import Business, Membership
 from businesses.services import (
+    BusinessCreationError,
     MembershipAssignmentError,
     add_staff_member,
+    create_business_for_owner,
     deactivate_staff_member,
+    update_business_settings,
 )
 from businesses.dashboard import dashboard_context
 
@@ -32,18 +34,14 @@ def create_business(request):
     form = BusinessForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         try:
-            with transaction.atomic():
-                user = get_user_model().objects.select_for_update().get(
-                    pk=request.user.pk
-                )
-                if Membership.objects.filter(user=user).exists():
-                    return redirect("business_home")
-                business = form.save()
-                Membership.objects.create(
-                    user=user,
-                    business=business,
-                    role=Membership.Role.OWNER,
-                )
+            create_business_for_owner(
+                actor=request.user,
+                name=form.cleaned_data["name"],
+                phone_number=form.cleaned_data["phone_number"],
+                address=form.cleaned_data["address"],
+            )
+        except BusinessCreationError:
+            return redirect("business_home")
         except IntegrityError:
             messages.error(request, "Your account already belongs to a Business.")
             return redirect("business_home")
@@ -65,7 +63,13 @@ def business_home(request):
 def business_settings(request):
     form = BusinessForm(request.POST or None, instance=request.business)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        update_business_settings(
+            business=request.business,
+            actor=request.user,
+            name=form.cleaned_data["name"],
+            phone_number=form.cleaned_data["phone_number"],
+            address=form.cleaned_data["address"],
+        )
         messages.success(request, "Business settings updated.")
         return redirect("business_settings")
     return render(
