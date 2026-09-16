@@ -76,10 +76,18 @@ class AuditEventBrowserRequestTests(TestCase):
             reverse("audit_event_list"),
             {"date_from": "2026-09-01", "date_to": "2026-09-30"},
         )
+        deactivated_actor_filtered = self.client.get(
+            reverse("audit_event_list"),
+            {"actor": self.deactivated_actor.pk},
+        )
 
         shown_ids = [row.event.pk for row in response.context["browser"].rows]
         self.assertEqual(shown_ids, [own_event.pk])
         self.assertNotIn(foreign_event.pk, shown_ids)
+        self.assertEqual(
+            [row.event.pk for row in deactivated_actor_filtered.context["browser"].rows],
+            [own_event.pk],
+        )
         self.assertContains(response, self.deactivated_actor.email)
         self.assertNotContains(response, "Foreign event must stay hidden.")
 
@@ -197,6 +205,7 @@ class AuditEventBrowserRequestTests(TestCase):
             self.assertEqual(self.client.get(reverse("audit_event_list")).status_code, 200)
         self.business.is_demo = True
         self.business.save(update_fields=["is_demo"])
+        self.client.force_login(staff)
         self.assertEqual(self.client.get(reverse("audit_event_list")).status_code, 200)
         Membership.objects.filter(pk=staff_membership.pk).update(is_active=False)
         self.client.force_login(staff)
