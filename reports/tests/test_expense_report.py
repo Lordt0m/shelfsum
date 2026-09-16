@@ -131,6 +131,22 @@ class ExpenseReportRequestTests(TestCase):
         )
         self.assertContains(response, "Expense report")
 
+    def test_report_table_has_a_caption_and_scoped_column_headers(self):
+        self.expense(expense_date=date(2026, 9, 15))
+
+        response = self.client.get(reverse("reports_expenses"))
+
+        self.assertContains(response, "<caption>Expenses matching the selected filters</caption>")
+        for heading in (
+            "Expense date",
+            "Expense ID",
+            "Category",
+            "Description",
+            "Status",
+            "Amount",
+        ):
+            self.assertContains(response, f'<th scope="col">{heading}</th>')
+
     def test_html_and_csv_keep_identical_scoped_results_and_filters(self):
         included = self.expense(expense_date=date(2026, 9, 15), amount="10.00")
         excluded = self.expense(expense_date=date(2026, 10, 1), amount="99.00")
