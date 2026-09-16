@@ -2,6 +2,7 @@ from django.shortcuts import render
 
 from businesses.access import membership_required
 from reports.csv import csv_response, safe_csv_text
+from reports.expense import ExpenseReportFilters, build_expense_report
 from reports.purchase import PurchaseReportFilters, build_purchase_report
 from reports.sales import SalesReportFilters, build_sales_report
 
@@ -59,6 +60,50 @@ def _purchase_report(request):
 @membership_required
 def reports_index(request):
     return render(request, "reports/index.html")
+
+
+def _expense_report(request):
+    filters = ExpenseReportFilters.from_query_params(request.GET)
+    return build_expense_report(business=request.business, filters=filters)
+
+
+@membership_required
+def expense_report(request):
+    return render(
+        request,
+        "reports/expense_report.html",
+        {"report": _expense_report(request)},
+    )
+
+
+EXPENSE_CSV_HEADINGS = (
+    "Expense date",
+    "Expense ID",
+    "Category",
+    "Description",
+    "Status",
+    "Amount",
+)
+
+
+@membership_required
+def expense_report_csv(request):
+    report = _expense_report(request)
+    return csv_response(
+        headings=EXPENSE_CSV_HEADINGS,
+        filename="expenses-report.csv",
+        rows=(
+            (
+                row.expense.date.isoformat(),
+                safe_csv_text(row.stable_reference),
+                safe_csv_text(row.category),
+                safe_csv_text(row.expense.description),
+                safe_csv_text(row.expense.get_status_display()),
+                f"{row.expense.amount:.2f}",
+            )
+            for row in report.rows
+        ),
+    )
 
 
 @membership_required
