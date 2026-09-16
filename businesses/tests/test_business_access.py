@@ -1,7 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
-from django.test import TestCase, override_settings
+from django.db import IntegrityError, close_old_connections, connection
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
+from threading import Barrier, Thread
+from unittest import skipUnless
 from unittest.mock import patch
 
 from auditing.models import AuditEvent
@@ -90,6 +93,25 @@ class BusinessCreationTests(TestCase):
         self.assertFalse(Membership.objects.exists())
         self.assertFalse(AuditEvent.objects.exists())
 
+    def test_create_request_propagates_audit_integrity_error_after_rollback(self):
+        with patch(
+            "businesses.services.record_audit_event",
+            side_effect=IntegrityError("audit unavailable"),
+        ):
+            with self.assertRaisesRegex(IntegrityError, "audit unavailable"):
+                self.client.post(
+                    reverse("business_create"),
+                    {
+                        "name": "Balogun Corner Shop",
+                        "phone_number": "08012345678",
+                        "address": "Lagos",
+                    },
+                )
+
+        self.assertFalse(Business.objects.exists())
+        self.assertFalse(Membership.objects.exists())
+        self.assertFalse(AuditEvent.objects.exists())
+
     def test_inactive_member_gets_stable_denial_instead_of_redirect_loop(self):
         business = Business.objects.create(name="Former Shop")
         Membership.objects.create(
@@ -107,6 +129,69 @@ class BusinessCreationTests(TestCase):
         self.assertEqual(create_response.status_code, 403)
         self.assertContains(create_response, "access is inactive", status_code=403)
 
+
+@skipUnless(
+    connection.vendor == "postgresql",
+    "Release verification only: requires PostgreSQL row locks and independent database connections.",
+)
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class BusinessCreationPostgreSQLConcurrencyTests(TransactionTestCase):
+    """Exercise the same-actor Business creation race against PostgreSQL row locks."""
+
+    reset_sequences = True
+
+    def setUp(self):
+        self.actor = get_user_model().objects.create_user(
+            email="owner@example.com", password="safe-password-123"
+        )
+
+    def test_same_actor_race_creates_one_business_and_stable_duplicate_error(self):
+        start = Barrier(2)
+        errors = []
+
+        def worker(name):
+            close_old_connections()
+            try:
+                actor = get_user_model().objects.get(pk=self.actor.pk)
+                start.wait(timeout=10)
+                create_business_for_owner(
+                    actor=actor,
+                    name=name,
+                    phone_number="08012345678",
+                    address="Lagos",
+                )
+            except Exception as error:
+                errors.append(error)
+            finally:
+                close_old_connections()
+
+        first = Thread(target=worker, args=("First Shop",), name="business-create-1")
+        second = Thread(target=worker, args=("Second Shop",), name="business-create-2")
+        first.start()
+        second.start()
+        first.join(timeout=15)
+        second.join(timeout=15)
+
+        self.assertFalse(first.is_alive())
+        self.assertFalse(second.is_alive())
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], BusinessCreationError)
+        self.assertEqual(
+            str(errors[0]), "Your account already belongs to a Business."
+        )
+        self.assertEqual(Business.objects.count(), 1)
+        self.assertEqual(
+            Membership.objects.filter(
+                user=self.actor, role=Membership.Role.OWNER, is_active=True
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            AuditEvent.objects.filter(
+                actor=self.actor, action="business.created"
+            ).count(),
+            1,
+        )
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class BusinessAccessTests(TestCase):

@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect, render
 
 from businesses.access import (
@@ -41,9 +40,6 @@ def create_business(request):
                 address=form.cleaned_data["address"],
             )
         except BusinessCreationError:
-            return redirect("business_home")
-        except IntegrityError:
-            messages.error(request, "Your account already belongs to a Business.")
             return redirect("business_home")
         messages.success(request, "Your Business is ready.")
         return redirect("business_home")
