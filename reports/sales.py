@@ -3,9 +3,9 @@ from datetime import date
 from decimal import Decimal
 from urllib.parse import urlencode
 
-from django.utils.dateparse import parse_date
 from django.utils import timezone
 
+from reports.filters import month_bounds_for_date, parse_inclusive_date_range
 from sales.models import Sale
 
 
@@ -32,34 +32,17 @@ class SalesReportFilters:
         status = query_params.get("status") or Sale.Status.COMPLETED
         if status not in REPORTABLE_STATUSES:
             errors.append("Choose completed or voided Sales.")
-        date_from_input = query_params.get("date_from") or ""
-        date_to_input = query_params.get("date_to") or ""
-        date_from = cls._parse_date(date_from_input, "Enter a valid start date.", errors)
-        date_to = cls._parse_date(date_to_input, "Enter a valid end date.", errors)
-        if not date_from_input and not date_to_input:
-            date_from, date_to = current_month_bounds()
-        if date_from and date_to and date_to < date_from:
-            errors.append("End date cannot be earlier than start date.")
+        date_range = parse_inclusive_date_range(
+            query_params, default_bounds=current_month_bounds
+        )
         return cls(
             status=status,
-            date_from=date_from,
-            date_to=date_to,
-            errors=tuple(errors),
-            date_from_input=date_from_input,
-            date_to_input=date_to_input,
+            date_from=date_range.date_from,
+            date_to=date_range.date_to,
+            errors=tuple(errors) + date_range.errors,
+            date_from_input=date_range.date_from_input,
+            date_to_input=date_range.date_to_input,
         )
-
-    @staticmethod
-    def _parse_date(value, error_message, errors):
-        if not value:
-            return None
-        try:
-            parsed = parse_date(value)
-        except ValueError:
-            parsed = None
-        if parsed is None:
-            errors.append(error_message)
-        return parsed
 
     @property
     def is_valid(self):
@@ -88,13 +71,7 @@ class SalesReportFilters:
 
 
 def current_month_bounds():
-    today = timezone.localdate()
-    first = today.replace(day=1)
-    if today.month == 12:
-        next_month = today.replace(year=today.year + 1, month=1, day=1)
-    else:
-        next_month = today.replace(month=today.month + 1, day=1)
-    return first, next_month - date.resolution
+    return month_bounds_for_date(timezone.localdate())
 
 
 @dataclass(frozen=True)

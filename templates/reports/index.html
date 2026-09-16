@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Reports | ShelfSum{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Reports</p><h1>Reports</h1></div></section>
+<div class="record-list report-directory">
+  <a href="{% url 'reports_sales' %}"><span><strong>Sales report</strong><small>Revenue and estimated cost by completed or voided Sale.</small></span><span>Open</span></a>
+  <a href="{% url 'reports_purchases' %}"><span><strong>Purchase report</strong><small>Purchase cost by completed or voided Purchase.</small></span><span>Open</span></a>
+</div>
+{% endblock %}

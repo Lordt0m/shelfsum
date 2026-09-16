@@ -2,7 +2,7 @@
 
 ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, an explainable operational dashboard, and a filterable Sales report with a spreadsheet-safe CSV export. Later vertical slices add the remaining reports, a dedicated Audit Event browser, fictional demonstration data, and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, an explainable operational dashboard, and filterable Sales and Purchase reports with spreadsheet-safe CSV exports. Later vertical slices add the remaining reports, a dedicated Audit Event browser, fictional demonstration data, and deployment.
 
 ## Current behaviour
 
@@ -32,6 +32,7 @@ The current application provides the product landing page, a deployment health r
 - Completed and voided Sales and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement and restores the sold quantities while preserving Sale cost snapshots.
 - The Business home explains the full current Africa/Lagos calendar month with completed Sale revenue and cost snapshots, recorded Expenses, Estimated Profit, current stock value, active low-stock count, and recent scoped Audit Events linked back to their records.
 - Owners and active Staff Members can inspect completed or voided Sales through inclusive date filters. The report shows completion-time cost estimates, excludes voided Sales from active totals, and exports exactly its active result set as UTF-8 CSV with formula-leading text neutralized.
+- Owners and active Staff Members can inspect completed or voided Purchases through inclusive date filters. The report shows quantity-by-unit-cost totals, excludes voided Purchases from active totals, and exports exactly its active result set as UTF-8 CSV with formula-leading text neutralized.
 
 ## Product boundary
 
@@ -98,7 +99,7 @@ A later milestone will provide a read-only Demo Business containing only fiction
 - `purchases` owns draft Purchase entry and the transactional `complete_purchase` and `void_purchase` seams; Purchase-origin and reversal Stock Movements remain in `inventory`.
 - `sales` owns draft Sale entry and the transactional `complete_sale` and `void_sale` seams; Sale-origin and reversal Stock Movements remain in `inventory`.
 - `expenses` owns immutable Expense records, request forms, date/status filters, and audited void-and-replace correction workflows.
-- `reports` owns read-only, Business-scoped report queries and their HTML and CSV presenters; the first implemented report covers Sales.
+- `reports` owns read-only, Business-scoped report queries and their HTML and CSV presenters; Sales and Purchase report modules own their statuses, rows, and totals while shared date-range and CSV response mechanics live in `reports.filters` and `reports.csv`.
 
 The public Product-creation service coordinates these modules inside one database transaction, which keeps the code a deployable Django monolith while making rollback behaviour directly testable.
 
