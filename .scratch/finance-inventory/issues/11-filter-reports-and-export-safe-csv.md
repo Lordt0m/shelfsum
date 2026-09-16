@@ -4,15 +4,15 @@
 
 **Blocked by:** 06: Complete Purchases atomically; 07: Complete Sales with availability protection; 09: Record Expenses and Stock Adjustments.
 
-**Status:** ready-for-agent
+**Status:** complete
 
-- [ ] Each report has a clear purpose, useful columns, totals where meaningful, and inclusive start/end filters preserved in the URL.
-- [ ] Completed, voided, and active-state rules match the specification and dashboard formulas.
-- [ ] CSV exports reuse the report query and filters and expose explicit stable headings.
-- [ ] Exported text beginning with `=`, `+`, `-`, or `@` is neutralized against spreadsheet formula execution.
-- [ ] Naira and decimal values remain machine-readable without losing precision.
-- [ ] Empty, invalid-range, and cross-Business requests behave safely and clearly.
-- [ ] Tests cover filters, boundaries, totals, headers, encoding, injection protection, permissions, and isolation.
+- [x] Each report has a clear purpose, useful columns, totals where meaningful, and inclusive start/end filters preserved in the URL.
+- [x] Completed, voided, and active-state rules match the specification and dashboard formulas.
+- [x] CSV exports reuse the report query and filters and expose explicit stable headings.
+- [x] Exported text beginning with `=`, `+`, `-`, or `@` is neutralized against spreadsheet formula execution.
+- [x] Naira and decimal values remain machine-readable without losing precision.
+- [x] Empty, invalid-range, and cross-Business requests behave safely and clearly.
+- [x] Tests cover filters, boundaries, totals, headers, encoding, injection protection, permissions, and isolation.
 
 ## Comments
 
@@ -31,3 +31,15 @@
 - Focused Sales, Purchase, and Expense verification passed 36 tests; the complete suite passed 185 tests with one expected PostgreSQL-only concurrency skip on SQLite. Django checks, migration drift, and whitespace checks passed. Fresh Standards and Spec re-reviews passed with no findings after the Expense table caption/header-scope repair. Ticket 11 remains open for current stock position and Product movements.
 - Current stock-position slice accepted at `196d343`. Its default current-Business snapshot includes active and inactive Products with positive stock, reconciles exactly with the dashboard stock-value formula, supports Product-status and positive/low/zero/all stock-state filters, and totals exactly the displayed current-cost rows. The accessible HTML and spreadsheet-safe CSV share one scoped result and explicitly avoid implying historical valuation.
 - Focused Sales, Purchase, Expense, and stock-position verification passed 47 tests; the complete suite passed 196 tests with one expected PostgreSQL-only concurrency skip on SQLite. Django checks, migration drift, and whitespace checks passed. Fresh Standards and Spec reviews passed with no required findings. Ticket 11 remains open only for Product movements.
+- Product-movement report slice accepted at `013eae0`, following implementation `6315dcf` and isolation proof `1607571`. The report uses explicit Africa/Lagos boundaries and display formatting, supports one-sided or inclusive dates plus movement-kind and current-Business Product filters, links every persisted origin including Purchase and Sale reversals, totals the signed displayed rows, and exports the identical result as formula-safe CSV with an explicit Lagos offset.
+- The final repair cycle added direct unfiltered HTML/CSV Business-isolation coverage and prevented Django template timezone conversion from changing the promised Lagos timestamp. Fresh Standards and Spec re-reviews then passed with zero findings.
+
+## Completion record
+
+- **Public ref:** accepted implementation `013eae0` (with the complete Ticket 11 sequence beginning at `5de1c1d`).
+- **Delivered behaviour:** Business-scoped Sales, Purchase, Expense, current stock-position, and Product-movement reports now share each report's active HTML result with a stable spreadsheet-safe CSV export. Date-based reports preserve explicit one-sided or inclusive filters; Product movements use Lagos-local creation-time boundaries and traceable origins.
+- **Verification:** 58 focused report tests passed. The complete suite passed 207 tests with one expected PostgreSQL-only concurrency test skipped on SQLite. `manage.py check`, migration-drift checking, and `git diff --check` passed.
+- **Independent review:** final fresh Standards and Spec reviews both passed with zero findings after two repairs: direct unfiltered Business-isolation proof and timezone-stable Lagos HTML timestamps.
+- **Documentation and demo impact:** README report capabilities and the agent module map now include Product movements. No demo records or credentials changed in this ticket.
+- **Risks and reopen triggers:** reopen if PostgreSQL release verification exposes report-query differences, if a report's HTML and CSV result sets diverge, if formula-leading text is no longer neutralized, or if Business scoping or Lagos boundary behaviour regresses.
+- **Next dependency:** Ticket 12, `Deliver a stable demo and Audit Event browser`. First inspect the existing Demo write-policy and Audit Event production seams against the specification before adding seed data or browser behavior.
