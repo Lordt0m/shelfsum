@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.dateparse import parse_date
 
-from businesses.access import demo_business_read_only, membership_required
+from businesses.access import membership_required
 from purchases.forms import PurchaseForm, PurchaseLineFormSet
 from purchases.models import Purchase
 from purchases.services import (
@@ -74,7 +74,6 @@ def purchase_list(request):
 
 
 @membership_required
-@demo_business_read_only
 def purchase_create(request):
     purchase = Purchase(business=request.business, creator=request.user)
     post_data = _purchase_post_data(request) if request.method == "POST" else None
@@ -113,7 +112,6 @@ def purchase_create(request):
 
 
 @membership_required
-@demo_business_read_only
 def purchase_detail(request, purchase_id):
     purchase = get_object_or_404(
         Purchase.objects.prefetch_related("lines__product"),
@@ -149,7 +147,6 @@ def purchase_detail(request, purchase_id):
 
 
 @membership_required
-@demo_business_read_only
 def purchase_void(request, purchase_id):
     purchase = get_object_or_404(
         Purchase.objects.prefetch_related("lines__product"),
@@ -170,7 +167,6 @@ def purchase_void(request, purchase_id):
 
 
 @membership_required
-@demo_business_read_only
 def purchase_edit(request, purchase_id):
     purchase = get_object_or_404(
         Purchase, pk=purchase_id, business=request.business

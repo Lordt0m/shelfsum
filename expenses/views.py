@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.dateparse import parse_date
-from businesses.access import demo_business_read_only, membership_required
+from businesses.access import membership_required
 from .forms import ExpenseForm
 from .models import Expense
 from .services import correct_expense, record_expense, void_expense
@@ -30,7 +30,6 @@ def expense_list(request):
     return render(request, "expenses/expense_list.html", {"expenses": expenses, "status": status, "status_choices": Expense.Status.choices, "date_from": date_from, "date_to": date_to, "filter_error": filter_error})
 
 @membership_required
-@demo_business_read_only
 def expense_create(request):
     form = ExpenseForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -43,7 +42,6 @@ def expense_detail(request, expense_id):
     return render(request, "expenses/expense_detail.html", {"expense": expense})
 
 @membership_required
-@demo_business_read_only
 def expense_void(request, expense_id):
     expense = get_object_or_404(Expense, pk=expense_id, business=request.business)
     if request.method != "POST": return render(request, "expenses/expense_detail.html", {"expense": expense}, status=405)
@@ -52,7 +50,6 @@ def expense_void(request, expense_id):
     return redirect("expense_detail", expense_id=expense.pk)
 
 @membership_required
-@demo_business_read_only
 def expense_correct(request, expense_id):
     original = get_object_or_404(Expense, pk=expense_id, business=request.business)
     initial = {f: getattr(original, f) for f in ["date", "category", "description", "amount", "notes"]}

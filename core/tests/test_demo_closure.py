@@ -35,6 +35,7 @@ from purchases.services import complete_purchase, create_draft_purchase, save_dr
 from sales.models import Sale, SaleLine
 from sales.services import complete_sale, create_draft_sale, save_draft_sale, void_sale
 from auditing.models import AuditEvent
+from auditing.services import record_audit_event
 
 
 DEMO_CREATED_AT = datetime(2026, 8, 20, 12, tzinfo=ZoneInfo("Africa/Lagos"))
@@ -264,6 +265,7 @@ class DemoMutationDenialMatrixTests(TestCase):
             ("expense correct", lambda: correct_expense(business=self.business, actor=self.owner, expense=self.original_expense, details={})),
             ("expense void", lambda: void_expense(business=self.business, actor=self.owner, expense=self.replacement_expense)),
             ("stock adjustment", lambda: record_stock_adjustment(business=self.business, actor=self.owner, product=self.product, quantity_change=1, reason=StockAdjustment.Reason.FOUND)),
+            ("audit event", lambda: record_audit_event(business=self.business, actor=self.owner, action="product.reviewed", affected_object=self.product, summary="Blocked Demo audit event")),
         )
         before = demo_state_fingerprint(self.business)
 

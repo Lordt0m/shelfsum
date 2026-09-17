@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.dateparse import parse_date
 
-from businesses.access import demo_business_read_only, membership_required
+from businesses.access import membership_required
 from catalogue.models import Product
 from .forms import StockAdjustmentForm
 from .models import StockAdjustment
@@ -57,7 +57,6 @@ def adjustment_detail(request, adjustment_id):
 
 
 @membership_required
-@demo_business_read_only
 def adjustment_create(request):
     form = StockAdjustmentForm(request.POST or None, business=request.business)
     preview = None

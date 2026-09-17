@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.dateparse import parse_date
 
-from businesses.access import demo_business_read_only, membership_required
+from businesses.access import membership_required
 from sales.forms import SaleForm, SaleLineFormSet
 from sales.models import Sale
 from sales.services import complete_sale, create_draft_sale, save_draft_sale, void_sale
@@ -44,7 +44,6 @@ def sale_list(request):
 
 
 @membership_required
-@demo_business_read_only
 def sale_create(request):
     sale = Sale(business=request.business, creator=request.user)
     post_data = _sale_post_data(request) if request.method == "POST" else None
@@ -69,7 +68,6 @@ def sale_create(request):
 
 
 @membership_required
-@demo_business_read_only
 def sale_detail(request, sale_id):
     sale = get_object_or_404(Sale.objects.prefetch_related("lines__product"), pk=sale_id, business=request.business)
     if request.method == "POST" and sale.status != Sale.Status.DRAFT:
@@ -82,7 +80,6 @@ def sale_detail(request, sale_id):
 
 
 @membership_required
-@demo_business_read_only
 def sale_void(request, sale_id):
     sale = get_object_or_404(
         Sale.objects.prefetch_related("lines__product"),
@@ -103,7 +100,6 @@ def sale_void(request, sale_id):
 
 
 @membership_required
-@demo_business_read_only
 def sale_edit(request, sale_id):
     sale = get_object_or_404(Sale, pk=sale_id, business=request.business)
     if sale.status != Sale.Status.DRAFT: return redirect("sale_detail", sale_id=sale.pk)

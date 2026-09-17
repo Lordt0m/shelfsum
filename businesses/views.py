@@ -3,7 +3,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from businesses.access import (
-    demo_business_read_only,
     inactive_membership_response,
     membership_for,
     membership_required,
@@ -55,7 +54,6 @@ def business_home(request):
 
 
 @owner_required
-@demo_business_read_only
 def business_settings(request):
     form = BusinessForm(request.POST or None, instance=request.business)
     if request.method == "POST" and form.is_valid():
@@ -88,7 +86,6 @@ def staff_member_list(request):
 
 
 @owner_required
-@demo_business_read_only
 def staff_member_add(request):
     form = StaffMemberForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -107,7 +104,6 @@ def staff_member_add(request):
 
 
 @owner_required
-@demo_business_read_only
 def staff_member_deactivate(request, membership_id):
     membership = get_object_or_404(
         Membership.objects.select_related("user"),

@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django.db.models import F, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from businesses.access import demo_business_read_only, membership_required
+from businesses.access import membership_required
 from catalogue.forms import ProductCreationForm, ProductUpdateForm
 from catalogue.models import Product
 from catalogue.services import create_product, deactivate_product, update_product
@@ -44,7 +44,6 @@ def product_detail(request, product_id):
 
 
 @membership_required
-@demo_business_read_only
 def product_create(request):
     form = ProductCreationForm(request.POST or None, business=request.business)
     if request.method == "POST" and form.is_valid():
@@ -76,7 +75,6 @@ def product_create(request):
 
 
 @membership_required
-@demo_business_read_only
 def product_edit(request, product_id):
     product = get_object_or_404(Product, pk=product_id, business=request.business)
     form = ProductUpdateForm(
@@ -109,7 +107,6 @@ def product_edit(request, product_id):
 
 
 @membership_required
-@demo_business_read_only
 def product_deactivate(request, product_id):
     product = get_object_or_404(Product, pk=product_id, business=request.business)
     if request.method != "POST":
