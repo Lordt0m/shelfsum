@@ -4,7 +4,7 @@
 
 **Blocked by:** 04: Maintain and find Products; 05: Add Staff Members with enforced permissions; 08: Void completed stock documents; 09: Record Expenses and Stock Adjustments; 10: Show an explainable Business dashboard; 11: Filter reports and export safe CSV.
 
-**Status:** in-progress
+**Status:** complete
 
 - [x] A deterministic command recreates a fictional Business with Owner and Staff Member demo users, several weeks of records, and at least one low-stock Product.
 - [x] Demo credentials are documented and visible from the landing page without exposing real personal or Business data.
@@ -46,5 +46,14 @@
 - **Next safe action:** implement ordered slice 4 from `a0b5b76`: publish the fictional credentials and read-only explanation on the landing page and README; make the fixed August 2026 demo period explicit and useful in the Demo dashboard; prove both demo roles can inspect every major workflow, report, and the Audit Event browser; run the consolidated request/service mutation-denial matrix; then complete PostgreSQL, deployment, and fresh release review gates before closing Ticket 12.
 - **Public demo presentation and closure proof accepted at `791fe5e`, following implementation `8c0135b` and repairs `5517c71` / `791fe5e`:** the landing page and README publish only the two canonical fictional credentials and explain that Demo data is read-only. The Demo dashboard uses the canonical August 2026 reference period while ordinary Businesses retain the current Africa/Lagos month. Both seeded roles prove every major list, detail, report, CSV export, dashboard, and Audit browser against representative seeded facts with cross-Business exclusion.
 - The consolidated matrix now covers both Demo roles across every unsafe request, including Owner-only routes and password change, and fingerprints the complete Business state before and after denial. Every public mutating service, including direct Audit Event creation, is guarded by the shared Demo policy. Initial independent review found Demo Staff authorization precedence, mutable published passwords, duplicated period facts, and the unguarded Audit service; all were repaired before fresh Standards and Spec reviews passed with zero findings.
-- Twenty-two focused closure tests, 156 related boundary tests, and the complete 252-test suite passed locally; three PostgreSQL-only concurrency tests were intentionally skipped on SQLite. Django checks, migration drift, and whitespace checks passed. Ticket 12 remains `in-progress` until those PostgreSQL tests run against a real PostgreSQL database and the deployment/release evidence is recorded.
-- **Next safe action:** provision or identify the free deployment/PostgreSQL target, run the complete suite with all PostgreSQL-only concurrency tests enabled, deploy the exact accepted source, seed and smoke-test both fictional roles on the hosted application, then perform fresh release review and close Ticket 12.
+- Twenty-two focused closure tests, 156 related boundary tests, and the complete 252-test suite passed locally; three PostgreSQL-only concurrency tests were intentionally skipped on SQLite. Django checks, migration drift, and whitespace checks passed. The real PostgreSQL suite and deployment evidence belong to dependent Ticket 13, whose acceptance contract explicitly owns both release gates.
+
+## Completion record
+
+- **Closure ref:** `e931a5a`, with final Demo mutation-boundary repair at `791fe5e`.
+- **Delivered behaviour:** one deterministic fictional Demo Business; public Owner and Staff credentials; a fixed, useful August 2026 dashboard; complete role-appropriate workflow, report, CSV, and Audit browsing; and shared read-only enforcement across every unsafe request and public mutating service, including password changes and direct Audit Event creation.
+- **Verification:** 22 focused closure tests and 156 related boundary tests passed. The complete SQLite suite passed 252 tests with three expected PostgreSQL-only concurrency skips. `manage.py check`, migration drift, and whitespace checks passed.
+- **Independent review:** repeated fresh Luna Standards and Spec reviews found Demo Staff authorization precedence, mutable public passwords, duplicated Demo-period facts, redundant request checks, and one unguarded Audit service. Repairs centralized the Demo contract and request rule, protected credentials, removed redundant decorators, and guarded direct audit mutation. Final fresh reviews passed with zero findings.
+- **Documentation and demo impact:** the landing page, README, dashboard, canonical seed, and public ticket now agree. All published people, Business details, credentials, and records are explicitly fictional.
+- **Remaining release risk:** PostgreSQL row-lock/concurrency behavior is intentionally unproved on SQLite. Ticket 13 must run all three skipped tests against PostgreSQL before deployment and must reopen this ticket if any Demo invariant fails.
+- **Next dependency:** begin Ticket 13 by reviewing `AGENTS.md`, rechecking current Render/Neon terms, and adding test-first production configuration plus PostgreSQL CI.
