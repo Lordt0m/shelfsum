@@ -8,6 +8,7 @@ from django.urls import reverse
 
 from auditing.models import AuditEvent
 from auditing.services import record_audit_event
+from businesses.dashboard import dashboard_context
 from businesses.models import Business, Membership
 from businesses.services import add_staff_member
 from catalogue.services import ProductCreation, ProductUpdate, create_product, deactivate_product, update_product
@@ -208,6 +209,34 @@ class BusinessDashboardTests(TestCase):
         self.assertContains(response, "No recorded Expenses in this period")
         self.assertContains(response, "No active Products are currently low on stock")
         self.assertContains(response, "No recent activity yet")
+
+    def test_demo_dashboard_uses_fixed_august_period_and_labels_read_only_access(self):
+        product = self.create_product(stock=8, cost="3.00")
+        self.complete_sale(product, sale_date=date(2026, 8, 31), quantity=2, price="10.00")
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+
+        response = self.dashboard(now=datetime(2026, 9, 15, 12, tzinfo=datetime_timezone.utc))
+
+        dashboard = response.context["dashboard"]
+        self.assertEqual(
+            (dashboard["period_start"], dashboard["period_end"]),
+            (date(2026, 8, 1), date(2026, 8, 31)),
+        )
+        self.assertEqual(dashboard["revenue"], Decimal("20.00"))
+        self.assertContains(response, "Demo period: August 2026")
+        self.assertContains(response, "fictional Demo Business is read-only")
+
+    def test_dashboard_accepts_explicit_reference_date_for_non_demo_business(self):
+        context = dashboard_context(
+            business=self.business,
+            reference_date=date(2026, 7, 14),
+        )
+
+        self.assertEqual(
+            (context["dashboard"]["period_start"], context["dashboard"]["period_end"]),
+            (date(2026, 7, 1), date(2026, 7, 31)),
+        )
 
     def test_inactive_positive_stock_is_in_current_balance(self):
         product = self.create_product(stock=3, cost="4.00", threshold=3)

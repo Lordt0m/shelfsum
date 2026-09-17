@@ -6,7 +6,11 @@
   <section class="business-hero" aria-labelledby="page-title">
     <p class="eyebrow">{{ membership.get_role_display }} access</p>
     <h1 id="page-title">{{ business.name }}</h1>
-    <p>Operational dashboard for {{ dashboard.period_start }} to {{ dashboard.period_end }} (Africa/Lagos).</p>
+    {% if business.is_demo %}
+      <p>Demo period: August 2026. This fictional Demo Business is read-only.</p>
+    {% else %}
+      <p>Operational dashboard for {{ dashboard.period_start }} to {{ dashboard.period_end }} (Africa/Lagos).</p>
+    {% endif %}
     <dl class="business-facts">
       <div><dt>Currency</dt><dd>{{ business.currency }}</dd></div>
       <div><dt>Timezone</dt><dd>{{ business.timezone }}</dd></div>
@@ -19,7 +23,7 @@
     <a class="text-link" href="{% url 'product_list' %}">View Products</a>
   </section>
   <section class="dashboard" aria-labelledby="summary-title">
-    <div class="page-heading"><div><p class="eyebrow">Current month</p><h2 id="summary-title">Explainable summary</h2></div></div>
+    <div class="page-heading"><div><p class="eyebrow">{% if business.is_demo %}Demo period{% else %}Current month{% endif %}</p><h2 id="summary-title">Explainable summary</h2></div></div>
     <div class="dashboard-grid">
       <article><h3>Sales revenue</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.revenue|floatformat:2 }}</p>{% if dashboard.revenue %}<a href="{{ dashboard.sales_url }}">View completed Sales in this period</a>{% else %}<p>No completed Sales in this period.</p>{% endif %}</article>
       <article><h3>Estimated cost of goods sold</h3><p class="dashboard-value">{{ business.currency }} {{ dashboard.cost_of_goods_sold|floatformat:2 }}</p><a href="{{ dashboard.sales_url }}">See completion-time cost snapshots</a></article>

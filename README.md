@@ -1,8 +1,8 @@
 # ShelfSum
 
-ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is being built as a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
+ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, an explainable operational dashboard, a dedicated Audit Event browser, and filterable Sales, Purchase, Expense, current stock-position, and Product-movement reports with spreadsheet-safe CSV exports. Later vertical slices add fictional demonstration data and deployment.
+The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, an explainable operational dashboard, a dedicated Audit Event browser, and filterable Sales, Purchase, Expense, current stock-position, and Product-movement reports with spreadsheet-safe CSV exports. It also includes a stable, fictional, read-only Demo Business for product inspection.
 
 ## Current behaviour
 
@@ -84,7 +84,12 @@ The active specification and vertical tickets are kept in [`.scratch/finance-inv
 
 ## Demonstration access
 
-A later milestone will provide a read-only Demo Business containing only fictional data. Registration will create isolated writable data; the application will not depend on the developer's computer or an AI model at runtime.
+The shared Demo Business contains only fictional data and is read-only. Use either role to inspect the seeded records, workflows, reports, CSV exports, and Audit Events:
+
+- Owner: `demo-owner@shelfsum.test` / `ShelfSumDemoOwner2026!`
+- Staff Member: `demo-staff@shelfsum.test` / `ShelfSumDemoStaff2026!`
+
+The Demo dashboard is fixed to the August 2026 seed period. Registration creates isolated writable data; the application does not depend on the developer's computer or an AI model at runtime.
 
 ## Working decisions
 

@@ -23,11 +23,20 @@
     <section class="hero" aria-labelledby="hero-title">
       <p class="eyebrow">Stock clarity for everyday retail</p>
       <h1 id="hero-title">Know what is on your shelves — and what the numbers mean.</h1>
-      <p class="hero-copy">ShelfSum is being built for a small-shop owner and staff team who need dependable stock records, straightforward daily activity, and reports they can explain.</p>
+      <p class="hero-copy">ShelfSum is for a small-shop Owner and Staff Member team who need dependable stock records, straightforward daily activity, and reports they can explain.</p>
       <div class="hero-actions">
         <a class="button" href="#purpose">Explore the product scope</a>
-        <span class="status">Demo access is coming with fictional data.</span>
       </div>
+    </section>
+
+    <section class="evidence demo-access" aria-labelledby="demo-access-title">
+      <p class="eyebrow">Try the product</p>
+      <h2 id="demo-access-title">Fictional Demo Business access</h2>
+      <p>All Demo Business records and identities are fictional. The Demo Business is read-only, so you can inspect its workflows, reports, and Audit Events without changing its data.</p>
+      <dl>
+        <div><dt>Owner</dt><dd><code>{{ demo_owner_email }}</code> / <code>{{ demo_owner_password }}</code></dd></div>
+        <div><dt>Staff Member</dt><dd><code>{{ demo_staff_email }}</code> / <code>{{ demo_staff_password }}</code></dd></div>
+      </dl>
     </section>
 
     <section class="purpose" id="purpose" aria-labelledby="purpose-title">
@@ -39,7 +48,7 @@
         <article>
           <p class="number">01</p>
           <h3>Traceable stock</h3>
-          <p>Every increase, sale, and correction will have an explicit reason rather than an unexplained quantity edit.</p>
+          <p>Every increase, sale, and correction has an explicit reason rather than an unexplained quantity edit.</p>
         </article>
         <article>
           <p class="number">02</p>
@@ -49,7 +58,7 @@
         <article>
           <p class="number">03</p>
           <h3>Explainable figures</h3>
-          <p>Reports will connect summaries to the sales, purchases, expenses, and movements beneath them.</p>
+          <p>Reports connect summaries to the sales, purchases, expenses, and movements beneath them.</p>
         </article>
       </div>
     </section>
@@ -57,7 +66,7 @@
     <section class="evidence" id="evidence" aria-labelledby="evidence-title">
       <p class="eyebrow">Technical foundation</p>
       <h2 id="evidence-title">A focused Django backend, made inspectable</h2>
-      <p>The first release uses server-rendered Django, behaviour-focused tests, a lightweight local setup, and a PostgreSQL release path. The product remains useful without an AI model or paid API.</p>
+      <p>The release uses server-rendered Django, behaviour-focused tests, a lightweight local setup, and a PostgreSQL release path. The product remains useful without an AI model or paid API.</p>
       <ul aria-label="Initial technical principles">
         <li>Python 3.13</li>
         <li>Django 5.2 LTS</li>

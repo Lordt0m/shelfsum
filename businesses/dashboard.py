@@ -15,6 +15,10 @@ from sales.models import Sale, SaleLine
 
 LAGOS = ZoneInfo("Africa/Lagos")
 MONEY = DecimalField(max_digits=24, decimal_places=2)
+# Keep this UI composition seam independent from the demo seeding module. The
+# seeded public demo is intentionally presented as a fixed August 2026 slice.
+DEMO_PERIOD_START = date(2026, 8, 1)
+DEMO_PERIOD_END = date(2026, 8, 31)
 
 
 def _total(queryset, expression):
@@ -42,11 +46,14 @@ SUPPORTED_ACTIVITY_OBJECT_TYPES = (
 )
 
 
-def dashboard_context(*, business):
+def dashboard_context(*, business, reference_date=None):
     """Return read-only, membership-scoped operational dashboard data."""
-    today = timezone.localtime(timezone.now(), LAGOS).date()
-    period_start = date(today.year, today.month, 1)
-    period_end = date(today.year, today.month, monthrange(today.year, today.month)[1])
+    if business.is_demo:
+        period_start, period_end = DEMO_PERIOD_START, DEMO_PERIOD_END
+    else:
+        today = reference_date or timezone.localtime(timezone.now(), LAGOS).date()
+        period_start = date(today.year, today.month, 1)
+        period_end = date(today.year, today.month, monthrange(today.year, today.month)[1])
     sale_lines = SaleLine.objects.filter(
         sale__business=business,
         sale__status=Sale.Status.COMPLETED,
