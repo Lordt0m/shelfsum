@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 
 from accounts import views
 from accounts.forms import EmailAuthenticationForm
+from businesses.access import demo_business_read_only
 
 
 urlpatterns = [
@@ -31,7 +32,7 @@ urlpatterns = [
     ),
     path(
         "password/change/",
-        auth_views.PasswordChangeView.as_view(
+        demo_business_read_only(auth_views.PasswordChangeView.as_view(
             template_name="accounts/form_page.html",
             success_url=reverse_lazy("password_change_done"),
             extra_context={
@@ -39,7 +40,7 @@ urlpatterns = [
                 "intro": "Confirm your current password before choosing a replacement.",
                 "submit_label": "Change password",
             },
-        ),
+        )),
         name="password_change",
     ),
     path(

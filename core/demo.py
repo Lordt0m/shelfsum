@@ -30,14 +30,15 @@ from sales.forms import SaleForm, SaleLineFormSet
 from sales.models import Sale
 from sales.services import complete_sale, create_draft_sale, void_sale
 
-
-DEMO_BUSINESS_NAME = "Lagos Lantern Pantry Demo (Fictional)"
-DEMO_OWNER_EMAIL = "demo-owner@shelfsum.test"
-DEMO_OWNER_PASSWORD = "ShelfSumDemoOwner2026!"
-DEMO_STAFF_EMAIL = "demo-staff@shelfsum.test"
-DEMO_STAFF_PASSWORD = "ShelfSumDemoStaff2026!"
-DEMO_REFERENCE_START = date(2026, 8, 1)
-DEMO_REFERENCE_END = date(2026, 8, 31)
+from core.demo_config import (
+    DEMO_BUSINESS_NAME,
+    DEMO_OWNER_EMAIL,
+    DEMO_OWNER_PASSWORD,
+    DEMO_REFERENCE_END,
+    DEMO_REFERENCE_START,
+    DEMO_STAFF_EMAIL,
+    DEMO_STAFF_PASSWORD,
+)
 
 
 class DemoSeedError(RuntimeError):

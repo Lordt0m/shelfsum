@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from core.demo import (
+from core.demo_config import (
     DEMO_OWNER_EMAIL,
     DEMO_OWNER_PASSWORD,
     DEMO_STAFF_EMAIL,

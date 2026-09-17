@@ -59,7 +59,15 @@ def demo_state_fingerprint(business):
     return {
         "business": model_rows(Business, pk=business.pk),
         "memberships": model_rows(Membership, business=business),
-        "member_users": model_rows(get_user_model(), pk__in=member_user_ids),
+        "member_users": tuple(
+            get_user_model()
+            .objects.filter(pk__in=member_user_ids)
+            .order_by("pk")
+            .values_list(
+                "pk", "email", "password", "first_name", "last_name",
+                "is_active", "is_staff", "is_superuser",
+            )
+        ),
         "products": model_rows(Product, business=business),
         "purchases": model_rows(Purchase, business=business),
         "purchase_lines": model_rows(PurchaseLine, purchase__business=business),
@@ -296,15 +304,50 @@ class DemoMutationDenialMatrixTests(TestCase):
             ("expense void", "expense_void", {"args": [self.replacement_expense.pk]}, {}),
             ("stock adjustment", "adjustment_create", {}, {}),
         )
-        self.client.force_login(self.owner)
         before = demo_state_fingerprint(self.business)
-
-        for label, route, kwargs, payload in cases:
-            with self.subTest(operation=label):
-                url = reverse(route, **kwargs)
-                response = self.client.post(url, payload)
-                self.assertEqual(response.status_code, 403)
-                self.assertContains(response, "read-only", status_code=403)
+        for role in (self.owner, self.staff):
+            self.client.force_login(role)
+            for label, route, kwargs, payload in cases + (
+                (
+                    "password change",
+                    "password_change",
+                    {},
+                    {
+                        "old_password": DEMO_OWNER_PASSWORD
+                        if role == self.owner
+                        else DEMO_STAFF_PASSWORD,
+                        "new_password1": "blocked-password-456",
+                        "new_password2": "blocked-password-456",
+                    },
+                ),
+            ):
+                with self.subTest(role=role.email, operation=label):
+                    url = reverse(route, **kwargs)
+                    response = self.client.post(url, payload)
+                    self.assertEqual(response.status_code, 403)
+                    self.assertContains(response, "Demo Business is read-only", status_code=403)
+                    self.assertContains(response, "read-only", status_code=403)
 
         after = demo_state_fingerprint(self.business)
         self.assertEqual(after, before)
+
+    def test_demo_roles_can_get_password_form_but_cannot_change_published_passwords(self):
+        for role, password in (
+            (self.owner, DEMO_OWNER_PASSWORD),
+            (self.staff, DEMO_STAFF_PASSWORD),
+        ):
+            with self.subTest(role=role.email):
+                self.client.force_login(role)
+                self.assertEqual(self.client.get(reverse("password_change")).status_code, 200)
+                response = self.client.post(
+                    reverse("password_change"),
+                    {
+                        "old_password": password,
+                        "new_password1": "blocked-password-456",
+                        "new_password2": "blocked-password-456",
+                    },
+                )
+                self.assertEqual(response.status_code, 403)
+                self.assertContains(response, "Demo Business is read-only", status_code=403)
+                role.refresh_from_db()
+                self.assertTrue(role.check_password(password))
