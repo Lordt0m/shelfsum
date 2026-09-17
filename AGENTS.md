@@ -51,3 +51,12 @@ Keep the application focused on the accepted MVP. Payments, payroll, tax, multic
 - Review changes against this file and the active ticket before committing.
 - Document commands only after executing them successfully from a clean-enough local state.
 - Require an independent fresh-context review for permission, Business isolation, Demo write protection, stock integrity, transaction, migration, and release-sensitive changes.
+
+## Release evidence
+
+- Keep SQLite as the documented fast local loop and run the complete release suite against PostgreSQL before deployment; a skipped PostgreSQL-only test is an open release gate.
+- Read production configuration from environment variables. Fail closed when required secrets or host/database settings are missing; keep local-development defaults explicit and separate.
+- Production must use HTTPS-aware proxy settings, restricted hosts and CSRF origins, collected static files, non-debug error responses, and logs that exclude secrets, passwords, connection strings, and fictional demo credentials.
+- Keep migrations and deterministic Demo seeding as explicit, repeatable release actions. A deployment is accepted only after a clean database can migrate, seed, restart, and preserve the canonical Demo state.
+- CI and hosting configuration are executable evidence: pin supported runtime/dependency versions, run checks and the PostgreSQL suite, and keep provider-specific commands in their owning configuration rather than duplicating them across documents.
+- Record the exact public ref, CI result, deployment URL, migration/seed outcome, and smoke-tested routes before making a public release claim.
