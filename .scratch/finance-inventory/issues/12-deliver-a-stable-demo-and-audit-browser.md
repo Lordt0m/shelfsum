@@ -6,13 +6,13 @@
 
 **Status:** in-progress
 
-- [ ] A deterministic command recreates a fictional Business with Owner and Staff Member demo users, several weeks of records, and at least one low-stock Product.
-- [ ] Demo credentials are documented and visible from the landing page without exposing real personal or Business data.
-- [ ] Demo users can inspect every major workflow and report.
-- [ ] Every write attempt against the Demo Business is rejected by shared server-side policy with a clear response.
-- [ ] Audit Events exist for every consequential action named in the specification and remain append-only through the application.
-- [ ] The Audit Event browser filters by actor, action, and date and remains scoped to the current Business.
-- [ ] Tests cover deterministic seeding, idempotent recreation, read-only enforcement at request and service seams, audit attribution, and isolation.
+- [x] A deterministic command recreates a fictional Business with Owner and Staff Member demo users, several weeks of records, and at least one low-stock Product.
+- [x] Demo credentials are documented and visible from the landing page without exposing real personal or Business data.
+- [x] Demo users can inspect every major workflow and report.
+- [x] Every write attempt against the Demo Business is rejected by shared server-side policy with a clear response.
+- [x] Audit Events exist for every consequential action named in the specification and remain append-only through the application.
+- [x] The Audit Event browser filters by actor, action, and date and remains scoped to the current Business.
+- [x] Tests cover deterministic seeding, idempotent recreation, read-only enforcement at request and service seams, audit attribution, and isolation.
 
 ## Comments
 
@@ -44,3 +44,7 @@
 - Exact reruns lock a stable database sentinel before reading canonical state, verify the complete logical manifest and provenance, reset only the two named fictional passwords, and add no rows. Partial or drifted state fails before credential changes; first-run downstream failures roll back users, Business, records, movements, and events; unrelated users and Businesses remain unchanged. Initial RED proved the missing command, then exposed low-stock and canonical-stock expectation errors. Independent Standards review found and repaired a first-run race plus under-specified same-action Audit Event provenance.
 - Fourteen focused demo tests passed locally with one PostgreSQL-only concurrency skip. The complete 245-test suite passed with three expected PostgreSQL-only concurrency skips; Django checks, migration drift, and whitespace checks passed. Fresh final Standards and Spec reviews passed with zero findings. The real two-worker demo-seed lock test remains a release-environment PostgreSQL gate.
 - **Next safe action:** implement ordered slice 4 from `a0b5b76`: publish the fictional credentials and read-only explanation on the landing page and README; make the fixed August 2026 demo period explicit and useful in the Demo dashboard; prove both demo roles can inspect every major workflow, report, and the Audit Event browser; run the consolidated request/service mutation-denial matrix; then complete PostgreSQL, deployment, and fresh release review gates before closing Ticket 12.
+- **Public demo presentation and closure proof accepted at `791fe5e`, following implementation `8c0135b` and repairs `5517c71` / `791fe5e`:** the landing page and README publish only the two canonical fictional credentials and explain that Demo data is read-only. The Demo dashboard uses the canonical August 2026 reference period while ordinary Businesses retain the current Africa/Lagos month. Both seeded roles prove every major list, detail, report, CSV export, dashboard, and Audit browser against representative seeded facts with cross-Business exclusion.
+- The consolidated matrix now covers both Demo roles across every unsafe request, including Owner-only routes and password change, and fingerprints the complete Business state before and after denial. Every public mutating service, including direct Audit Event creation, is guarded by the shared Demo policy. Initial independent review found Demo Staff authorization precedence, mutable published passwords, duplicated period facts, and the unguarded Audit service; all were repaired before fresh Standards and Spec reviews passed with zero findings.
+- Twenty-two focused closure tests, 156 related boundary tests, and the complete 252-test suite passed locally; three PostgreSQL-only concurrency tests were intentionally skipped on SQLite. Django checks, migration drift, and whitespace checks passed. Ticket 12 remains `in-progress` until those PostgreSQL tests run against a real PostgreSQL database and the deployment/release evidence is recorded.
+- **Next safe action:** provision or identify the free deployment/PostgreSQL target, run the complete suite with all PostgreSQL-only concurrency tests enabled, deploy the exact accepted source, seed and smoke-test both fictional roles on the hosted application, then perform fresh release review and close Ticket 12.
