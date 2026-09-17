@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: shelfsum
+    runtime: python
+    region: frankfurt
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application
+    healthCheckPath: /health/
+    envVars:
+      - key: SHELFSUM_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

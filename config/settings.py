@@ -1,8 +1,12 @@
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-local-development-only"
+LOCAL_SECRET_KEY = "django-insecure-local-development-only"
+SECRET_KEY = LOCAL_SECRET_KEY
 DEBUG = True
 ALLOWED_HOSTS = []
 
@@ -73,11 +77,103 @@ TIME_ZONE = "Africa/Lagos"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = Path(os.environ.get("STATIC_ROOT") or BASE_DIR / "staticfiles")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "sign_in"
 LOGIN_REDIRECT_URL = "business_home"
+
+
+def _csv_environment_value(name):
+    return [value.strip() for value in os.environ.get(name, "").split(",") if value.strip()]
+
+
+def _production_hosts():
+    hosts = _csv_environment_value("ALLOWED_HOSTS")
+    if not hosts:
+        hosts = _csv_environment_value("RENDER_EXTERNAL_HOSTNAME")
+    unusable_host = any(
+        host == "*"
+        or "://" in host
+        or "/" in host
+        or any(character.isspace() for character in host)
+        for host in hosts
+    )
+    if not hosts or unusable_host:
+        raise ImproperlyConfigured(
+            "Production requires a usable ALLOWED_HOSTS or RENDER_EXTERNAL_HOSTNAME."
+        )
+    return hosts
+
+
+def _production_csrf_origins(hosts):
+    explicit_origins = _csv_environment_value("CSRF_TRUSTED_ORIGINS")
+    if explicit_origins:
+        if any(not origin.startswith("https://") for origin in explicit_origins):
+            raise ImproperlyConfigured("Production CSRF_TRUSTED_ORIGINS must use HTTPS.")
+        return explicit_origins
+    return [
+        f"https://{('*' + host) if host.startswith('.') else host}"
+        for host in hosts
+    ]
+
+
+SHELFSUM_ENV = os.environ.get("SHELFSUM_ENV", "development").strip().lower()
+
+if SHELFSUM_ENV == "production":
+    production_secret = os.environ.get("SECRET_KEY", "").strip()
+    production_database_url = os.environ.get("DATABASE_URL", "").strip()
+    if not production_secret:
+        raise ImproperlyConfigured("Production requires SECRET_KEY.")
+    if production_secret == LOCAL_SECRET_KEY:
+        raise ImproperlyConfigured("Production requires a non-local SECRET_KEY.")
+    if not production_database_url:
+        raise ImproperlyConfigured("Production requires DATABASE_URL.")
+
+    production_hosts = _production_hosts()
+    from dj_database_url import config as database_config
+
+    try:
+        production_database = database_config(
+            default=production_database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True,
+        )
+    except (TypeError, ValueError) as error:
+        raise ImproperlyConfigured("Production DATABASE_URL is invalid.") from error
+    if production_database.get("ENGINE") != "django.db.backends.postgresql":
+        raise ImproperlyConfigured("Production DATABASE_URL must use PostgreSQL.")
+    production_database["CONN_MAX_AGE"] = 600
+    production_database["CONN_HEALTH_CHECKS"] = True
+    production_database.setdefault("OPTIONS", {})["sslmode"] = "require"
+
+    SECRET_KEY = production_secret
+    DEBUG = False
+    ALLOWED_HOSTS = production_hosts
+    DATABASES = {"default": production_database}
+    CSRF_TRUSTED_ORIGINS = _production_csrf_origins(production_hosts)
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        },
+    }
+elif SHELFSUM_ENV not in {
+    "",
+    "development",
+    "local",
+}:
+    raise ImproperlyConfigured("SHELFSUM_ENV must be development or production.")
