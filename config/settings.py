@@ -1,5 +1,7 @@
+import ipaddress
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -110,27 +112,97 @@ def _production_hosts():
     return hosts
 
 
+def _valid_hostname(hostname):
+    if not hostname or len(hostname) > 253 or "*" in hostname:
+        return False
+    normalized = hostname.rstrip(".").lower()
+    try:
+        ipaddress.ip_address(normalized)
+        return True
+    except ValueError:
+        pass
+    labels = normalized.split(".")
+    return all(
+        label
+        and len(label) <= 63
+        and label[0].isalnum()
+        and label[-1].isalnum()
+        and all(character.isalnum() or character == "-" for character in label)
+        for label in labels
+    )
+
+
+def _origin_hostname_is_allowed(hostname, hosts):
+    normalized_hostname = hostname.rstrip(".").lower()
+    for allowed_host in hosts:
+        try:
+            normalized_allowed = urlsplit(f"//{allowed_host}").hostname
+        except ValueError:
+            continue
+        if not normalized_allowed:
+            continue
+        normalized_allowed = normalized_allowed.rstrip(".").lower()
+        if normalized_allowed.startswith("."):
+            domain = normalized_allowed[1:]
+            if normalized_hostname == domain or normalized_hostname.endswith(f".{domain}"):
+                return True
+        elif normalized_hostname == normalized_allowed:
+            return True
+    return False
+
+
 def _production_csrf_origins(hosts):
     explicit_origins = _csv_environment_value("CSRF_TRUSTED_ORIGINS")
-    if explicit_origins:
-        if any(not origin.startswith("https://") for origin in explicit_origins):
-            raise ImproperlyConfigured("Production CSRF_TRUSTED_ORIGINS must use HTTPS.")
-        return explicit_origins
-    return [
-        f"https://{('*' + host) if host.startswith('.') else host}"
-        for host in hosts
-    ]
+    origins = explicit_origins or [f"https://{host.lstrip('.')}" for host in hosts]
+    for origin in origins:
+        try:
+            parsed_origin = urlsplit(origin)
+            hostname = parsed_origin.hostname
+            parsed_origin.port
+        except ValueError as error:
+            raise ImproperlyConfigured(
+                "Production CSRF_TRUSTED_ORIGINS contains an invalid origin."
+            ) from error
+        if (
+            parsed_origin.scheme.lower() != "https"
+            or not parsed_origin.netloc
+            or parsed_origin.username is not None
+            or parsed_origin.password is not None
+            or parsed_origin.path
+            or parsed_origin.query
+            or parsed_origin.fragment
+            or not _valid_hostname(hostname)
+            or not _origin_hostname_is_allowed(hostname, hosts)
+        ):
+            raise ImproperlyConfigured(
+                "Production CSRF_TRUSTED_ORIGINS must be HTTPS origins for an allowed host."
+            )
+    return origins
 
 
-SHELFSUM_ENV = os.environ.get("SHELFSUM_ENV", "development").strip().lower()
+raw_shelfsum_env = os.environ.get("SHELFSUM_ENV")
+if not (raw_shelfsum_env or "").strip() and any(
+    os.environ.get(name, "").strip()
+    for name in ("DATABASE_URL", "RENDER", "RENDER_EXTERNAL_HOSTNAME")
+):
+    raise ImproperlyConfigured(
+        "SHELFSUM_ENV must be set to production when production signals are present."
+    )
+SHELFSUM_ENV = (raw_shelfsum_env or "development").strip().lower()
 
 if SHELFSUM_ENV == "production":
     production_secret = os.environ.get("SECRET_KEY", "").strip()
     production_database_url = os.environ.get("DATABASE_URL", "").strip()
     if not production_secret:
         raise ImproperlyConfigured("Production requires SECRET_KEY.")
-    if production_secret == LOCAL_SECRET_KEY:
-        raise ImproperlyConfigured("Production requires a non-local SECRET_KEY.")
+    if (
+        production_secret == LOCAL_SECRET_KEY
+        or production_secret == "replace-with-a-random-production-secret"
+        or production_secret.lower().startswith("django-insecure-")
+        or len(production_secret) < 50
+        or len(set(production_secret)) < 5
+    ):
+        raise ImproperlyConfigured("Production requires a strong, non-placeholder SECRET_KEY.")
     if not production_database_url:
         raise ImproperlyConfigured("Production requires DATABASE_URL.")
 
@@ -144,10 +216,17 @@ if SHELFSUM_ENV == "production":
             conn_health_checks=True,
             ssl_require=True,
         )
-    except (TypeError, ValueError) as error:
-        raise ImproperlyConfigured("Production DATABASE_URL is invalid.") from error
+    except (TypeError, ValueError):
+        raise ImproperlyConfigured("Production DATABASE_URL is invalid.") from None
     if production_database.get("ENGINE") != "django.db.backends.postgresql":
         raise ImproperlyConfigured("Production DATABASE_URL must use PostgreSQL.")
+    if any(
+        not production_database.get(field)
+        for field in ("NAME", "HOST", "USER", "PASSWORD")
+    ):
+        raise ImproperlyConfigured(
+            "Production DATABASE_URL must include a PostgreSQL name, host, user, and password."
+        )
     production_database["CONN_MAX_AGE"] = 600
     production_database["CONN_HEALTH_CHECKS"] = True
     production_database.setdefault("OPTIONS", {})["sslmode"] = "require"

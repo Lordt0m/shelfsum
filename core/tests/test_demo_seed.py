@@ -48,8 +48,10 @@ class DemoSeedCommandTests(TestCase):
         call_command("seed_demo", stdout=output)
 
         self.assertIn(DEMO_BUSINESS_NAME, output.getvalue())
-        self.assertIn(DEMO_OWNER_EMAIL, output.getvalue())
-        self.assertIn(DEMO_STAFF_EMAIL, output.getvalue())
+        self.assertNotIn(DEMO_OWNER_EMAIL, output.getvalue())
+        self.assertNotIn(DEMO_OWNER_PASSWORD, output.getvalue())
+        self.assertNotIn(DEMO_STAFF_EMAIL, output.getvalue())
+        self.assertNotIn(DEMO_STAFF_PASSWORD, output.getvalue())
 
     def test_first_run_builds_coherent_canonical_dataset(self):
         seed_demo_business()

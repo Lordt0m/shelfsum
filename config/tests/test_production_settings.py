@@ -5,6 +5,13 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
+from core.demo_config import (
+    DEMO_OWNER_EMAIL,
+    DEMO_OWNER_PASSWORD,
+    DEMO_STAFF_EMAIL,
+    DEMO_STAFF_PASSWORD,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SETTINGS_PROBE = """
@@ -43,6 +50,7 @@ class ProductionSettingsSubprocessTests(TestCase):
             "SECRET_KEY",
             "DATABASE_URL",
             "RENDER_EXTERNAL_HOSTNAME",
+            "RENDER",
             "ALLOWED_HOSTS",
             "CSRF_TRUSTED_ORIGINS",
             "STATIC_ROOT",
@@ -78,7 +86,7 @@ class ProductionSettingsSubprocessTests(TestCase):
     def test_production_fails_closed_when_required_environment_is_missing(self):
         valid = {
             "SHELFSUM_ENV": "production",
-            "SECRET_KEY": "test-only-production-secret",
+            "SECRET_KEY": "production-test-secret-abcdefghijklmnopqrstuvwxyz-0123456789",
             "DATABASE_URL": "postgresql://user:password@example.com:5432/shelfsum",
             "RENDER_EXTERNAL_HOSTNAME": "shelfsum.onrender.com",
         }
@@ -90,17 +98,64 @@ class ProductionSettingsSubprocessTests(TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("ImproperlyConfigured", result.stderr)
 
-        local_secret = valid.copy()
-        local_secret["SECRET_KEY"] = "django-insecure-local-development-only"
-        result = self.run_probe(local_secret)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("ImproperlyConfigured", result.stderr)
+        for weak_secret in (
+            "django-insecure-local-development-only",
+            "replace-with-a-random-production-secret",
+            "django-insecure-production-secret-abcdefghijklmnopqrstuvwxyz-0123456789",
+            "short-production-secret",
+            "a" * 64,
+        ):
+            with self.subTest(weak_secret=weak_secret):
+                environment = valid.copy()
+                environment["SECRET_KEY"] = weak_secret
+                result = self.run_probe(environment)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ImproperlyConfigured", result.stderr)
+
+    def test_blank_or_absent_environment_fails_when_production_signals_are_present(self):
+        signals = {
+            "DATABASE_URL": "postgresql://user:password@example.com:5432/shelfsum",
+            "RENDER": "true",
+            "RENDER_EXTERNAL_HOSTNAME": "shelfsum.onrender.com",
+        }
+        for signal, value in signals.items():
+            for blank_environment in (True, False):
+                with self.subTest(signal=signal, blank_environment=blank_environment):
+                    environment = {signal: value}
+                    if blank_environment:
+                        environment["SHELFSUM_ENV"] = ""
+                    result = self.run_probe(environment)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("ImproperlyConfigured", result.stderr)
+
+    def test_production_rejects_structurally_unusable_database_urls(self):
+        urls = (
+            "postgresql://",
+            "postgresql://user:pass@/shelfsum",
+            "postgresql://user:pass@example.com/",
+            "postgresql://@example.com/shelfsum",
+            "postgresql://user@example.com/shelfsum",
+            "mysql://user:pass@example.com/shelfsum",
+        )
+        for database_url in urls:
+            with self.subTest(database_url=database_url):
+                result = self.run_probe(
+                    {
+                        "SHELFSUM_ENV": "production",
+                        "SECRET_KEY": "production-test-secret-abcdefghijklmnopqrstuvwxyz-0123456789",
+                        "DATABASE_URL": database_url,
+                        "RENDER_EXTERNAL_HOSTNAME": "shelfsum.onrender.com",
+                    }
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ImproperlyConfigured", result.stderr)
+                self.assertNotIn(database_url, result.stderr)
 
     def test_production_uses_ssl_postgres_and_explicit_https_safety(self):
         result = self.run_probe(
             {
                 "SHELFSUM_ENV": "production",
-                "SECRET_KEY": "test-only-production-secret",
+                "SECRET_KEY": "production-test-secret-abcdefghijklmnopqrstuvwxyz-0123456789",
                 "DATABASE_URL": "postgresql://user:password@example.com:5432/shelfsum",
                 "RENDER_EXTERNAL_HOSTNAME": "shelfsum.onrender.com",
             }
@@ -126,11 +181,37 @@ class ProductionSettingsSubprocessTests(TestCase):
             result.stdout,
         )
 
+    def test_explicit_csrf_origins_are_https_structural_and_business_scoped(self):
+        valid = {
+            "SHELFSUM_ENV": "production",
+            "SECRET_KEY": "production-test-secret-abcdefghijklmnopqrstuvwxyz-0123456789",
+            "DATABASE_URL": "postgresql://user:password@example.com:5432/shelfsum",
+            "ALLOWED_HOSTS": "example.com,.example.com",
+        }
+        accepted = valid | {"CSRF_TRUSTED_ORIGINS": "https://shop.example.com"}
+        result = self.run_probe(accepted)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('"csrf_origins": ["https://shop.example.com"]', result.stdout)
+
+        for origin in (
+            "http://example.com",
+            "https://other.example.net",
+            "https://user:password@example.com",
+            "https://example.com/path",
+            "https://example.com?next=/",
+            "https://example.com#fragment",
+            "https://example..com",
+        ):
+            with self.subTest(origin=origin):
+                result = self.run_probe(valid | {"CSRF_TRUSTED_ORIGINS": origin})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ImproperlyConfigured", result.stderr)
+
     def test_production_collectstatic_succeeds_in_a_temporary_output(self):
         with tempfile.TemporaryDirectory() as static_root:
             env = {
                 "SHELFSUM_ENV": "production",
-                "SECRET_KEY": "test-only-production-secret",
+                "SECRET_KEY": "production-test-secret-abcdefghijklmnopqrstuvwxyz-0123456789",
                 "DATABASE_URL": "postgresql://user:password@example.com:5432/shelfsum",
                 "RENDER_EXTERNAL_HOSTNAME": "shelfsum.onrender.com",
                 "STATIC_ROOT": static_root,
@@ -186,6 +267,15 @@ class ReleaseMetadataTests(TestCase):
             "value: production",
             "generateValue: true",
             "sync: false",
-            "gunicorn config.wsgi:application",
+            "startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT",
         ):
             self.assertIn(expected, render)
+
+        command = (PROJECT_ROOT / "core" / "management" / "commands" / "seed_demo.py").read_text()
+        for credential in (
+            DEMO_OWNER_EMAIL,
+            DEMO_OWNER_PASSWORD,
+            DEMO_STAFF_EMAIL,
+            DEMO_STAFF_PASSWORD,
+        ):
+            self.assertNotIn(credential, command)
