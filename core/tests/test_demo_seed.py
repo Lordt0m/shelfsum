@@ -321,7 +321,7 @@ class DemoSeedPostgreSQLConcurrencyTests(TransactionTestCase):
             except Exception as error:
                 errors.append(error)
             finally:
-                close_old_connections()
+                connection.close()
 
         first = Thread(target=worker, name="demo-seed-1")
         second = Thread(target=worker, name="demo-seed-2")

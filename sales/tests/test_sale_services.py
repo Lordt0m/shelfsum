@@ -375,7 +375,7 @@ class SaleEditCompletionPostgreSQLConcurrencyTests(TransactionTestCase):
             except Exception as error:  # thread exceptions are asserted in the test process
                 errors.append(error)
             finally:
-                close_old_connections()
+                connection.close()
 
         def completion_worker():
             close_old_connections()
@@ -385,7 +385,7 @@ class SaleEditCompletionPostgreSQLConcurrencyTests(TransactionTestCase):
             except Exception as error:
                 errors.append(error)
             finally:
-                close_old_connections()
+                connection.close()
 
         with patch("sales.services._lock_sale_lines", side_effect=pause_edit_after_line_locks):
             edit_thread = Thread(target=edit_worker, name="sale-edit")

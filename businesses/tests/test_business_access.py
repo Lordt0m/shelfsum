@@ -163,7 +163,7 @@ class BusinessCreationPostgreSQLConcurrencyTests(TransactionTestCase):
             except Exception as error:
                 errors.append(error)
             finally:
-                close_old_connections()
+                connection.close()
 
         first = Thread(target=worker, args=("First Shop",), name="business-create-1")
         second = Thread(target=worker, args=("Second Shop",), name="business-create-2")
@@ -177,7 +177,8 @@ class BusinessCreationPostgreSQLConcurrencyTests(TransactionTestCase):
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], BusinessCreationError)
         self.assertEqual(
-            str(errors[0]), "Your account already belongs to a Business."
+            errors[0].messages,
+            ["Your account already belongs to a Business."],
         )
         self.assertEqual(Business.objects.count(), 1)
         self.assertEqual(
