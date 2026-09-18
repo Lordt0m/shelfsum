@@ -43,8 +43,8 @@ jobs:
 
       - name: Assert PostgreSQL connection
         run: >-
-          python -c
-          "import django; django.setup(); from django.db import connection;
+          python manage.py shell -c
+          "from django.db import connection;
           assert connection.vendor == 'postgresql'"
 
       - name: Django system check
@@ -52,6 +52,12 @@ jobs:
 
       - name: Check migration drift
         run: python manage.py makemigrations --check --dry-run
+
+      - name: Apply release migrations and repeat Demo seed
+        run: |
+          python manage.py migrate --no-input
+          python manage.py seed_demo
+          python manage.py seed_demo
 
       - name: Run complete PostgreSQL test suite
         run: python manage.py test
