@@ -1,9 +1,11 @@
+import contextlib
+import io
 import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, TestSuite
 
 from core.demo_config import (
     DEMO_OWNER_EMAIL,
@@ -38,6 +40,7 @@ print(json.dumps({
     "static_url": settings.STATIC_URL,
     "white_noise": "whitenoise.middleware.WhiteNoiseMiddleware" in settings.MIDDLEWARE,
     "static_storage": settings.STORAGES["staticfiles"]["BACKEND"],
+    "test_runner": getattr(settings, "TEST_RUNNER", ""),
 }))
 """
 
@@ -47,6 +50,7 @@ class ProductionSettingsSubprocessTests(TestCase):
         env = os.environ.copy()
         for name in (
             "SHELFSUM_ENV",
+            "CI",
             "SECRET_KEY",
             "DATABASE_URL",
             "RENDER_EXTERNAL_HOSTNAME",
@@ -82,6 +86,54 @@ class ProductionSettingsSubprocessTests(TestCase):
         self.assertIn('"secret_key": "django-insecure-local-development-only"', result.stdout)
         self.assertIn('"engine": "django.db.backends.sqlite3"', result.stdout)
         self.assertIn('"static_url": "/static/"', result.stdout)
+
+    def test_postgresql_test_mode_requires_ci_and_database_url(self):
+        valid = {
+            "SHELFSUM_ENV": "postgresql-test",
+            "CI": "true",
+            "DATABASE_URL": "postgresql://user:password@example.com:5432/shelfsum",
+        }
+        result = self.run_probe(valid | {"CI": "false"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ImproperlyConfigured", result.stderr)
+
+        result = self.run_probe(valid | {"CI": ""})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ImproperlyConfigured", result.stderr)
+
+        result = self.run_probe(valid | {"DATABASE_URL": ""})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ImproperlyConfigured", result.stderr)
+
+        result = self.run_probe(valid)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('"engine": "django.db.backends.postgresql"', result.stdout)
+        self.assertIn('"sslmode": null', result.stdout)
+        self.assertIn('"allowed_hosts": []', result.stdout)
+        self.assertIn('"csrf_origins": []', result.stdout)
+        self.assertIn('"white_noise": false', result.stdout)
+        self.assertIn('"test_runner": "config.test_runner.NoSkipTestRunner"', result.stdout)
+
+    def test_postgresql_test_mode_rejects_unusable_or_non_postgresql_urls(self):
+        for database_url in (
+            "postgresql://",
+            "postgresql://user:password@/shelfsum",
+            "postgresql://user:password@example.com/",
+            "postgresql://@example.com/shelfsum",
+            "postgresql://user@example.com/shelfsum",
+            "mysql://user:password@example.com/shelfsum",
+        ):
+            with self.subTest(database_url=database_url):
+                result = self.run_probe(
+                    {
+                        "SHELFSUM_ENV": "postgresql-test",
+                        "CI": "true",
+                        "DATABASE_URL": database_url,
+                    }
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ImproperlyConfigured", result.stderr)
+                self.assertNotIn(database_url, result.stderr)
 
     def test_production_fails_closed_when_required_environment_is_missing(self):
         valid = {
@@ -279,3 +331,47 @@ class ReleaseMetadataTests(TestCase):
             DEMO_STAFF_PASSWORD,
         ):
             self.assertNotIn(credential, command)
+
+
+class PostgreSQLTestRunnerContractTests(TestCase):
+    def test_no_skip_runner_turns_skips_into_failures(self):
+        from config.test_runner import NoSkipTestRunner
+
+        class SkippedTest(TestCase):
+            def test_database_dependent_check(self):
+                self.skipTest("requires PostgreSQL")
+
+        suite = TestSuite([SkippedTest("test_database_dependent_check")])
+        with contextlib.redirect_stderr(io.StringIO()):
+            result = NoSkipTestRunner(verbosity=0).run_suite(suite)
+
+        self.assertFalse(result.wasSuccessful())
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.skipped, [])
+        self.assertIn("requires PostgreSQL", result.failures[0][1])
+
+
+class ContinuousIntegrationWorkflowContractTests(TestCase):
+    def test_postgresql_release_workflow_is_pinned_and_runs_all_gates(self):
+        workflow = (PROJECT_ROOT / ".github" / "workflows" / "ci.yml").read_text()
+        for expected in (
+            "runs-on: ubuntu-latest",
+            "permissions:\n  contents: read",
+            "actions/checkout@v7",
+            "actions/setup-python@v7",
+            'python-version: "3.13.14"',
+            "cache: pip",
+            "image: postgres:17",
+            "CI: true",
+            "SHELFSUM_ENV: postgresql-test",
+            "DATABASE_URL: postgresql://shelfsum:shelfsum@localhost:5432/shelfsum",
+            "python -m pip install -r requirements.txt",
+            "connection.vendor == 'postgresql'",
+            "python manage.py check",
+            "python manage.py makemigrations --check --dry-run",
+            "python manage.py test",
+            "SHELFSUM_ENV: production",
+            "python manage.py collectstatic --no-input",
+            "python manage.py check --deploy",
+        ):
+            self.assertIn(expected, workflow)

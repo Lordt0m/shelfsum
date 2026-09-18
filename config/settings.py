@@ -180,6 +180,29 @@ def _production_csrf_origins(hosts):
     return origins
 
 
+def _required_postgresql_database(database_url, *, ssl_require):
+    from dj_database_url import config as database_config
+
+    try:
+        database = database_config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=ssl_require,
+        )
+    except (TypeError, ValueError):
+        raise ImproperlyConfigured("DATABASE_URL is invalid.") from None
+    if database.get("ENGINE") != "django.db.backends.postgresql":
+        raise ImproperlyConfigured("DATABASE_URL must use PostgreSQL.")
+    if any(
+        not database.get(field) for field in ("NAME", "HOST", "USER", "PASSWORD")
+    ):
+        raise ImproperlyConfigured(
+            "DATABASE_URL must include a PostgreSQL name, host, user, and password."
+        )
+    return database
+
+
 raw_shelfsum_env = os.environ.get("SHELFSUM_ENV")
 if not (raw_shelfsum_env or "").strip() and any(
     os.environ.get(name, "").strip()
@@ -207,26 +230,9 @@ if SHELFSUM_ENV == "production":
         raise ImproperlyConfigured("Production requires DATABASE_URL.")
 
     production_hosts = _production_hosts()
-    from dj_database_url import config as database_config
-
-    try:
-        production_database = database_config(
-            default=production_database_url,
-            conn_max_age=600,
-            conn_health_checks=True,
-            ssl_require=True,
-        )
-    except (TypeError, ValueError):
-        raise ImproperlyConfigured("Production DATABASE_URL is invalid.") from None
-    if production_database.get("ENGINE") != "django.db.backends.postgresql":
-        raise ImproperlyConfigured("Production DATABASE_URL must use PostgreSQL.")
-    if any(
-        not production_database.get(field)
-        for field in ("NAME", "HOST", "USER", "PASSWORD")
-    ):
-        raise ImproperlyConfigured(
-            "Production DATABASE_URL must include a PostgreSQL name, host, user, and password."
-        )
+    production_database = _required_postgresql_database(
+        production_database_url, ssl_require=True
+    )
     production_database["CONN_MAX_AGE"] = 600
     production_database["CONN_HEALTH_CHECKS"] = True
     production_database.setdefault("OPTIONS", {})["sslmode"] = "require"
@@ -250,9 +256,25 @@ if SHELFSUM_ENV == "production":
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
         },
     }
+elif SHELFSUM_ENV == "postgresql-test":
+    if os.environ.get("CI", "").strip().lower() != "true":
+        raise ImproperlyConfigured("SHELFSUM_ENV=postgresql-test requires CI=true.")
+    test_database_url = os.environ.get("DATABASE_URL", "").strip()
+    if not test_database_url:
+        raise ImproperlyConfigured(
+            "SHELFSUM_ENV=postgresql-test requires DATABASE_URL."
+        )
+    DATABASES = {
+        "default": _required_postgresql_database(
+            test_database_url, ssl_require=False
+        )
+    }
+    TEST_RUNNER = "config.test_runner.NoSkipTestRunner"
 elif SHELFSUM_ENV not in {
     "",
     "development",
     "local",
 }:
-    raise ImproperlyConfigured("SHELFSUM_ENV must be development or production.")
+    raise ImproperlyConfigured(
+        "SHELFSUM_ENV must be development, postgresql-test, or production."
+    )

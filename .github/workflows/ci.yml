@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      SHELFSUM_ENV: postgresql-test
+      DATABASE_URL: postgresql://shelfsum:shelfsum@localhost:5432/shelfsum
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: shelfsum
+          POSTGRES_USER: shelfsum
+          POSTGRES_PASSWORD: shelfsum
+        options: >-
+          --health-cmd "pg_isready -U shelfsum -d shelfsum"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13.14"
+          cache: pip
+
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Assert PostgreSQL connection
+        run: >-
+          python -c
+          "import django; django.setup(); from django.db import connection;
+          assert connection.vendor == 'postgresql'"
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Check migration drift
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run complete PostgreSQL test suite
+        run: python manage.py test
+
+      - name: Collect production static files
+        env:
+          SHELFSUM_ENV: production
+          SECRET_KEY: ci-production-secret-abcdefghijklmnopqrstuvwxyz-0123456789
+          RENDER_EXTERNAL_HOSTNAME: ci.example.com
+          STATIC_ROOT: staticfiles/ci-production
+        run: python manage.py collectstatic --no-input
+
+      - name: Production deployment check
+        env:
+          SHELFSUM_ENV: production
+          SECRET_KEY: ci-production-secret-abcdefghijklmnopqrstuvwxyz-0123456789
+          RENDER_EXTERNAL_HOSTNAME: ci.example.com
+        run: python manage.py check --deploy
