@@ -181,7 +181,7 @@ The reviewed free-release path is:
 
 Production requires `SHELFSUM_ENV=production`, a strong environment-held `SECRET_KEY`, a structurally valid SSL PostgreSQL `DATABASE_URL`, and an allowed hostname. Configuration fails closed when production signals are present without the production environment or required values.
 
-[`render.yaml`](render.yaml) defines the service, health check, build command, start command, and non-secret environment contract. [`build.sh`](build.sh) installs pinned dependencies, collects static files, migrates the database, and seeds the Demo Business. Credentials and connection strings are not committed or printed in release logs.
+[`render.yaml`](render.yaml) defines the service, health check, build command, start command, and non-secret environment contract. [`build.sh`](build.sh) installs pinned dependencies, collects static files, migrates the database, and seeds the Demo Business. Production secrets and connection strings are not committed or printed in release logs; the fictional shared Demo credentials are public by design.
 
 The final deployment is accepted only after the published ref passes hosted PostgreSQL CI, clean migration and seeding, restart-persistence, role-based smoke tests, and mobile-layout review.
 
