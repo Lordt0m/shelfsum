@@ -1,115 +1,219 @@
 # ShelfSum
 
-ShelfSum is a focused stock and daily-business record for a small-shop Owner and Staff Member team. It is a server-rendered Django application with traceable Stock Movements, clear permissions, explainable operational figures, and behaviour-focused tests.
+ShelfSum is a server-rendered Django application for a small-shop Owner and Staff Member team to record stock and daily Business activity without losing the history behind the numbers.
 
-The current application provides the product landing page, a deployment health response, email-based registration and authentication, one-Business membership enforcement, Owner-only Business settings, Staff Member management, Product and stock workflows, Purchase and Sale lifecycles, Expense correction, an explainable operational dashboard, a dedicated Audit Event browser, and filterable Sales, Purchase, Expense, current stock-position, and Product-movement reports with spreadsheet-safe CSV exports. It also includes a stable, fictional, read-only Demo Business for product inspection.
+It provides a Product catalogue, Purchases, Sales, Expenses, manual Stock Adjustments, explainable summaries, filtered reports, spreadsheet-safe CSV exports, and an append-only Audit Event browser. The application is designed as a focused operational record: it is not accounting software, and its profit figures are explicitly estimates derived from recorded activity.
 
-## Current behaviour
+## Why this project exists
 
-- A visitor can register and sign in using a unique email address.
-- Email storage and sign-in are case-insensitive.
-- A newly registered person creates one Business and becomes its Owner.
-- The database and request boundary prevent one person from belonging to a second Business.
-- Business settings are available only to the Owner; Staff Member requests are rejected on the server.
-- An Owner can add an already registered, unassigned person as a Staff Member by email, then list or deactivate Staff Members.
-- Membership changes are Owner-only, Business-scoped, audited, and unavailable for the read-only Demo Business.
-- Deactivation retains the person and their Audit Event attribution while immediately blocking their Business access.
-- Password changes and POST-only sign-out use Django's authenticated session flow.
-- Product names and non-empty SKUs are case-insensitively unique inside one Business and reusable by another Business.
-- A positive opening quantity creates a Stock Adjustment and immutable Stock Movement in the same transaction as the Product and Audit Event.
-- A zero opening quantity creates no meaningless zero movement; the Product begins at zero and its creation remains recorded by an Audit Event.
-- Product pages are resolved inside the current membership's Business and never expose Stock on Hand as an editable field.
-- Approved catalogue details can be edited without changing Stock on Hand or movement history.
-- Deactivated Products keep their history and are excluded from new stock-activity choices.
-- Product search and active/low-stock filters are combined in bookmarkable query parameters; the low-stock boundary is inclusive.
-- Owners and active Staff Members can draft, edit, filter, and complete multi-line Purchases using server-rendered forms that remain usable without JavaScript.
-- Completing a Purchase deterministically locks its Products, updates Stock on Hand and current unit costs, writes one immutable Purchase-origin Stock Movement per line, and records an Audit Event in one transaction.
-- Completed and voided Purchases and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement, rejects a negative resulting Stock on Hand, and leaves current Product unit cost unchanged.
-- Owners and active Staff Members can draft, edit, list, filter, inspect, and complete multi-line Sales using server-rendered forms that remain usable without JavaScript.
-- Completing a Sale deterministically locks its Products, rechecks Stock on Hand, snapshots each Product cost on its Sale line, decreases stock, writes one immutable Sale-origin Stock Movement per line, and records an Audit Event in one transaction.
-- Owners and active Staff Members can record, list, filter, inspect, void, and correct Expenses with controlled categories, positive decimal amounts, immutable history, linked replacements, and audited lifecycle changes.
-- Owners and active Staff Members can preview and record explained manual Stock Adjustments; locked validation prevents negative Stock on Hand and preserves an immutable movement and audit trail.
-- Completed and voided Sales and their lines reject edits, deletion, bulk ORM mutation, new-line insertion, and repeated completion or voiding. A one-time void confirmation applies one immutable reversal Stock Movement per original movement and restores the sold quantities while preserving Sale cost snapshots.
-- The Business home explains the full current Africa/Lagos calendar month with completed Sale revenue and cost snapshots, recorded Expenses, Estimated Profit, current stock value, active low-stock count, and recent scoped Audit Events linked back to their records.
-- Owners and active Staff Members can inspect completed or voided Sales through inclusive date filters. The report shows completion-time cost estimates, excludes voided Sales from active totals, and exports exactly its active result set as UTF-8 CSV with formula-leading text neutralized.
-- Owners and active Staff Members can inspect completed or voided Purchases through inclusive date filters. The report shows quantity-by-unit-cost totals, excludes voided Purchases from active totals, and exports exactly its active result set as UTF-8 CSV with formula-leading text neutralized.
-- Owners and active Staff Members can inspect recorded or voided Expenses through inclusive date filters. The report shows recorded Expense totals, excludes voided originals from active totals while counting a recorded replacement once, and exports exactly its active result set as UTF-8 CSV with formula-leading text neutralized.
-- Owners and active Staff Members can inspect a current stock-position snapshot for active, inactive, or all Products and positive, low, zero, or all stock states. It sums exactly the displayed quantity-by-current-unit-cost rows, includes inactive positive stock in its default total, and exports the identical result as UTF-8 CSV with formula-leading text neutralized. Current costs do not reconstruct historical inventory value.
-- Owners and active Staff Members can inspect Product movements for a full or explicitly bounded Africa/Lagos local period, filter by movement kind and current-Business Product, see linked origins and voided-document reversals, and export the identical signed result as UTF-8 CSV with explicit Lagos offsets and formula-leading text neutralized.
-- Owners and active Staff Members can inspect current-Business Audit Events, including deactivated actors, newest first; actor, action, and one-sided or inclusive Africa/Lagos date filters preserve invalid values without exposing records or choices from another Business. The browser is also available to read-only Demo Business members.
+A stock balance is only useful when a shop can explain how it changed. ShelfSum keeps a fast current Stock on Hand value while preserving an immutable Stock Movement for every opening quantity, Purchase, Sale, adjustment, and reversal.
 
-## Product boundary
+The first release is aimed at one small Business with:
 
-ShelfSum will help a Business:
+- an **Owner** who manages Business settings and Staff Members as well as daily records;
+- **Staff Members** who can record and inspect day-to-day activity without owner-only controls; and
+- visitors using a stable fictional **Demo Business** that is inspectable but cannot be changed.
 
-- keep a Product catalogue and explain Stock on Hand;
-- record Purchases, Sales, Expenses, and Stock Adjustments;
-- warn about low stock;
-- inspect date-filtered reports and safe CSV exports;
-- separate Owner controls from Staff Member work;
-- preserve consequential actions in an Audit Event history.
+## Demonstration access
 
-It is not payment, payroll, tax, invoicing, forecasting, barcode, multicurrency, or AI software.
+The seeded Demo Business contains only fictional data. Both roles can inspect the dashboard, records, reports, CSV exports, Stock Movements, and Audit Events; server-side rules reject every attempted Demo write.
 
-## Technical foundation
+- Owner: `demo-owner@shelfsum.test` / `ShelfSumDemoOwner2026!`
+- Staff Member: `demo-staff@shelfsum.test` / `ShelfSumDemoStaff2026!`
 
-- Python 3.13
-- Django 5.2 LTS
-- Server-rendered HTML and CSS
-- SQLite for the lightweight local loop
-- PostgreSQL required for release verification and deployment
-- Django's built-in test runner
+The Demo dashboard is fixed to August 2026 so its figures remain stable. Ordinary Businesses use the current calendar month in `Africa/Lagos`.
 
-## Local setup on Windows
+A public URL will be added only after the reviewed release has completed PostgreSQL CI, deployment, persistence, and smoke verification.
+
+## What the application demonstrates
+
+### Access and isolation
+
+- Email-based registration and authentication with case-insensitive unique email addresses.
+- One active Business membership per user and one Owner per Business.
+- Owner-only Staff management and Business settings, enforced on the server.
+- Business-scoped object resolution before record lookup, including filter choices and exports.
+- Immediate access removal for inactive memberships without deleting historical actor attribution.
+- A shared Demo Business rule at both request and service boundaries.
+
+### Stock and transaction integrity
+
+- Whole-number quantities and decimal monetary values.
+- Current Stock on Hand reconciled with immutable Stock Movements.
+- Atomic multi-line Purchase and Sale completion with deterministic Product locking.
+- Sale availability rechecks and completion-time unit-cost snapshots.
+- Completed documents protected from edits, deletion, bulk mutation, line insertion, and replay.
+- One-time Purchase and Sale correction through exact reversal movements rather than destructive edits.
+- Manual Stock Adjustments with a preview followed by a locked non-negative stock recheck.
+- Consequential changes and their Audit Events committed or rolled back together.
+
+### Explainable reporting
+
+- A current-month dashboard for revenue, estimated cost of goods sold, Expenses, Estimated Profit, current stock value, low-stock count, and recent activity.
+- Sales, Purchase, Expense, current stock-position, and Product-movement reports.
+- Inclusive `Africa/Lagos` date filtering and Business-scoped Product, actor, action, status, and stock filters.
+- HTML and CSV parity: an export uses the same validated result as the page.
+- UTF-8 CSV output with formula-leading text neutralized before spreadsheet use.
+- An immutable, newest-first Audit Event browser that retains deactivated actors.
+
+Core forms are usable without JavaScript. JavaScript is progressive enhancement, not a runtime dependency, and the application does not require an AI model or paid API.
+
+## Architecture
+
+ShelfSum is one deployable Django monolith with explicit modules and small application-service seams:
+
+| Module | Responsibility |
+| --- | --- |
+| `accounts` | Email-based user identity and authentication. |
+| `businesses` | Business membership, access establishment, Owner controls, Demo write protection, and dashboard composition. |
+| `catalogue` | Products, catalogue queries, forms, and Product-creation orchestration. |
+| `inventory` | Stock Adjustments, immutable Stock Movements, locking, reconciliation, and stock changes. |
+| `purchases` | Draft Purchase entry plus atomic completion and reversal. |
+| `sales` | Draft Sale entry plus availability-safe completion, cost snapshots, and reversal. |
+| `expenses` | Immutable Expense recording and void-and-replace correction. |
+| `auditing` | Append-only Audit Events and the read-only Audit Event browser. |
+| `reports` | Business-scoped report queries and shared HTML/CSV presentation rules. |
+
+Views handle HTTP concerns and resolve records inside the active Business. Public services own multi-record transactions. Models and database constraints defend terminal records and immutable history against direct or bulk mutation. This keeps the request path easy to trace while making transaction rollback and invariant tests precise.
+
+The accepted design decisions are recorded in [`docs/adr/`](docs/adr/), and the module contracts and invariant owners are mapped in [`docs/agents/module-map.md`](docs/agents/module-map.md).
+
+## Data model
+
+The main relationships are:
+
+- `User` -> one `Membership` -> one `Business`.
+- `Business` -> many `Products`, members, documents, Stock Movements, and Audit Events.
+- `Purchase` / `Sale` -> many immutable terminal lines after completion.
+- `Product` -> current Stock on Hand plus many immutable Stock Movements.
+- `Stock Movement` -> exactly one valid origin: Stock Adjustment, Purchase line, Sale line, or reversed movement.
+- `Expense` -> an immutable recorded or voided entry, optionally linked to a replacement.
+- `Audit Event` -> Business, actor, action, affected record identity, summary, and timestamp.
+
+Database constraints reinforce one-owner membership, unique Business-local Product identity, nonzero movement quantities, valid movement provenance, and one-time reversal links. Model and queryset guards protect immutable and terminal records, while application services add permission, locking, and cross-record validation that cannot be expressed by a single constraint.
+
+## Important request flows
+
+### Complete a Sale
+
+1. Establish the authenticated active membership and current Business.
+2. Resolve the draft Sale and its Products inside that Business.
+3. Reject inactive actors, Demo writes, invalid lines, or terminal records.
+4. Lock the Sale, ordered lines, and Products in one transaction.
+5. Recheck availability, snapshot unit costs, reduce Stock on Hand, and write one Sale-origin movement per line.
+6. Mark the Sale completed and append its Audit Event.
+7. Roll back the complete operation if any downstream write fails.
+
+### Correct a completed Purchase or Sale
+
+The original document and movements remain unchanged. A one-time void operation locks the relevant records, validates the resulting stock, appends exact inverse Stock Movements, changes the document to `VOIDED`, and records an Audit Event atomically.
+
+### Build a report
+
+A protected view establishes the Business, validates filters, and calls one read-only report builder. The same result object supplies page rows, totals, and CSV output, preventing export drift.
+
+## Permissions
+
+| Capability | Owner | Staff Member | Demo Owner | Demo Staff |
+| --- | :---: | :---: | :---: | :---: |
+| Inspect Business records, reports, CSV, and Audit Events | Yes | Yes | Yes | Yes |
+| Record Products, stock activity, Purchases, Sales, and Expenses | Yes | Yes | No | No |
+| Change Business settings | Yes | No | No | No |
+| Add or deactivate Staff Members | Yes | No | No | No |
+| Change password through the shared Demo accounts | N/A | N/A | No | No |
+
+Permission and isolation checks run on the server. Hiding a link in the interface is never the security boundary.
+
+## Local setup
+
+Requirements: Python 3.13 and Git. SQLite is the default local database, so PostgreSQL is not needed for the fast development loop.
+
+### Windows PowerShell
 
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
 .\.venv\Scripts\python manage.py migrate
+.\.venv\Scripts\python manage.py seed_demo
 .\.venv\Scripts\python manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000/` for the landing page. The health response is available at `http://127.0.0.1:8000/health/`.
+Open `http://127.0.0.1:8000/`. The health endpoint is `http://127.0.0.1:8000/health/`.
 
-## Verification
+The seed command is deterministic: it creates the canonical fictional Business on the first run and verifies its logical manifest on rerun. It refuses partial or drifted canonical data rather than silently overwriting it.
+
+## Testing
+
+### Fast local suite
 
 ```powershell
 .\.venv\Scripts\python manage.py check
+.\.venv\Scripts\python manage.py makemigrations --check --dry-run
 .\.venv\Scripts\python manage.py test
 ```
 
-Tests exercise public behaviour through Django's request/response boundary. Transactional stock workflows use focused public service seams, including Product creation, Purchase and Sale completion, and Purchase and Sale voiding, for exact atomicity and ledger-invariant tests.
+SQLite runs the complete portable suite. Three row-locking and independent-connection concurrency tests are explicitly PostgreSQL-only and therefore skip locally.
 
-The active specification and vertical tickets are kept in [`.scratch/finance-inventory/`](.scratch/finance-inventory/). Product vocabulary and invariants are defined in [`CONTEXT.md`](CONTEXT.md), with consequential technical choices recorded under [`docs/adr/`](docs/adr/).
+### PostgreSQL release suite
 
-## Demonstration access
+The GitHub Actions workflow in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) provisions PostgreSQL 17 and uses an explicit CI-only settings mode. It:
 
-The shared Demo Business contains only fictional data and is read-only. Use either role to inspect the seeded records, workflows, reports, CSV exports, and Audit Events:
+1. confirms Django is using PostgreSQL;
+2. runs system and migration-drift checks;
+3. applies every migration to a clean service database;
+4. runs the Demo seed twice to prove repeatability;
+5. runs the complete test suite with a runner that converts any skip into a failure; and
+6. checks production static collection and Django deployment settings.
 
-- Owner: `demo-owner@shelfsum.test` / `ShelfSumDemoOwner2026!`
-- Staff Member: `demo-staff@shelfsum.test` / `ShelfSumDemoStaff2026!`
+Tests cover request behavior, role permissions, cross-Business isolation, direct-service denial, invalid input, immutable history, stock reconciliation, replay protection, transaction rollback, report/export parity, time boundaries, Demo state fingerprints, and PostgreSQL concurrency.
 
-The Demo dashboard is fixed to the August 2026 seed period. Registration creates isolated writable data; the application does not depend on the developer's computer or an AI model at runtime.
+The workflow file is locally validated and independently reviewed. A CI status badge will be added only after the repository is published and this exact workflow passes on GitHub.
 
-## Working decisions
+## Deployment
 
-- Completed and voided stock-affecting records are immutable and corrected only by explicit one-time reversal workflows.
-- Stock on Hand will be fast to read while an immutable Stock Movement history explains every change.
-- Monetary values will use decimal arithmetic and quantities will use whole units in the first release.
-- The deployed application will use PostgreSQL and keep durable data off the web service's filesystem.
+The reviewed free-release path is:
 
-## Module boundaries
+- a Render web service in Frankfurt;
+- a Neon PostgreSQL database in Frankfurt;
+- Gunicorn for the Django application;
+- WhiteNoise compressed manifest storage for static assets; and
+- Render-provided HTTPS with restricted hosts, trusted origins, secure cookies, proxy handling, and HSTS.
 
-- `businesses` owns membership-based access and the shared Demo Business write rule.
-- `businesses` also owns the authenticated dashboard composition and its read-only, Business-scoped summary query.
-- `catalogue` owns Products, their forms and pages, and Product-creation orchestration.
-- `inventory` owns Stock Adjustments, immutable Stock Movements, and locked stock changes.
-- `auditing` owns append-only Audit Events and the read-only, Business-scoped Audit Event browser.
-- `purchases` owns draft Purchase entry and the transactional `complete_purchase` and `void_purchase` seams; Purchase-origin and reversal Stock Movements remain in `inventory`.
-- `sales` owns draft Sale entry and the transactional `complete_sale` and `void_sale` seams; Sale-origin and reversal Stock Movements remain in `inventory`.
-- `expenses` owns immutable Expense records, request forms, date/status filters, and audited void-and-replace correction workflows.
-- `reports` owns read-only, Business-scoped report queries and their HTML and CSV presenters; Sales, Purchase, Expense, current stock-position, and Product-movement report modules own their filters, rows, and totals while shared date-range and CSV response mechanics live in `reports.filters` and `reports.csv`.
+Production requires `SHELFSUM_ENV=production`, a strong environment-held `SECRET_KEY`, a structurally valid SSL PostgreSQL `DATABASE_URL`, and an allowed hostname. Configuration fails closed when production signals are present without the production environment or required values.
 
-The public Product-creation service coordinates these modules inside one database transaction, which keeps the code a deployable Django monolith while making rollback behaviour directly testable.
+[`render.yaml`](render.yaml) defines the service, health check, build command, start command, and non-secret environment contract. [`build.sh`](build.sh) installs pinned dependencies, collects static files, migrates the database, and seeds the Demo Business. Credentials and connection strings are not committed or printed in release logs.
 
-See [AGENTS.md](AGENTS.md) for the repository workflow and verification expectations.
+The final deployment is accepted only after the published ref passes hosted PostgreSQL CI, clean migration and seeding, restart-persistence, role-based smoke tests, and mobile-layout review.
+
+## Trade-offs
+
+- **Server-rendered monolith:** keeps permission and transaction behavior visible and lightweight, but does not demonstrate a separate API/client architecture.
+- **Current balance plus immutable ledger:** makes stock fast to read and independently explainable, at the cost of maintaining a strict reconciliation invariant.
+- **Explicit services instead of model signals:** makes ordering and rollback testable, but creates more small interfaces that must be documented.
+- **Reversals instead of edits:** preserves provenance and correction history, but makes correction workflows more deliberate.
+- **Completion-time cost snapshots:** keep historical Sale estimates stable when Product cost changes, but do not provide accounting valuation methods such as FIFO or weighted-average history.
+- **SQLite locally, PostgreSQL for release:** keeps the Windows development loop light while reserving row-locking claims for the production database.
+- **Manual entry first:** keeps the product usable without fragile external services, but excludes automatic catalogue, banking, payment, and exchange-rate integrations.
+
+## Explicit exclusions
+
+The first release does not include payments, invoicing, payroll, tax accounting, multicurrency, fractional quantities, multiple Businesses per user, forecasting, barcodes, external catalogue integrations, a REST API, or AI-dependent behavior.
+
+## Known limitations
+
+- Estimated Profit is an operational estimate, not accounting, tax, or cash profit.
+- Current stock value uses the Product's current unit-cost estimate; it does not reconstruct historical inventory value.
+- One user can belong to only one Business in the first release.
+- Quantities are whole numbers and Business currency/timezone are fixed to `NGN` and `Africa/Lagos`.
+- The free Render service may sleep while idle, so the first request after inactivity can be slower.
+- Shared Demo credentials are public by design and protect fictional read-only data only.
+- Public URL, CI badge, and screenshots remain evidence-gated until the reviewed release is live and smoke-tested.
+
+## Repository evidence
+
+- Product language: [`CONTEXT.md`](CONTEXT.md)
+- Implementation specification: [`.scratch/finance-inventory/spec.md`](.scratch/finance-inventory/spec.md)
+- Vertical tickets and completion records: [`.scratch/finance-inventory/issues/`](.scratch/finance-inventory/issues/)
+- Architecture decisions: [`docs/adr/`](docs/adr/)
+- Invariants and module interfaces: [`docs/agents/module-map.md`](docs/agents/module-map.md)
+- Repository workflow and release gates: [`AGENTS.md`](AGENTS.md)
