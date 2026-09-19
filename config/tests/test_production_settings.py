@@ -41,6 +41,7 @@ print(json.dumps({
     "white_noise": "whitenoise.middleware.WhiteNoiseMiddleware" in settings.MIDDLEWARE,
     "static_storage": settings.STORAGES["staticfiles"]["BACKEND"],
     "test_runner": getattr(settings, "TEST_RUNNER", ""),
+    "silenced_checks": getattr(settings, "SILENCED_SYSTEM_CHECKS", []),
 }))
 """
 
@@ -155,7 +156,10 @@ class ProductionSettingsSubprocessTests(TestCase):
             "replace-with-a-random-production-secret",
             "django-insecure-production-secret-abcdefghijklmnopqrstuvwxyz-0123456789",
             "short-production-secret",
+            "0123456789abcdef0123456789abcdef",
             "a" * 64,
+            "1234" * 11,
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         ):
             with self.subTest(weak_secret=weak_secret):
                 environment = valid.copy()
@@ -163,6 +167,27 @@ class ProductionSettingsSubprocessTests(TestCase):
                 result = self.run_probe(environment)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("ImproperlyConfigured", result.stderr)
+
+    def test_production_accepts_strong_render_generated_secret(self):
+        render_secrets = (
+            "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+            "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY",
+            "-_-_MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmE=",
+        )
+        for secret in render_secrets:
+            with self.subTest(secret=secret):
+                result = self.run_probe(
+                    {
+                        "SHELFSUM_ENV": "production",
+                        "SECRET_KEY": secret,
+                        "DATABASE_URL": "postgresql://user:password@example.com:5432/shelfsum",
+                        "RENDER_EXTERNAL_HOSTNAME": "shelfsum.onrender.com",
+                    }
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn('"debug": false', result.stdout)
+                self.assertIn(f'"secret_key": "{secret}"', result.stdout)
+                self.assertIn('"silenced_checks": ["security.W009"]', result.stdout)
 
     def test_blank_or_absent_environment_fails_when_production_signals_are_present(self):
         signals = {
@@ -232,6 +257,7 @@ class ProductionSettingsSubprocessTests(TestCase):
             '"static_storage": "whitenoise.storage.CompressedManifestStaticFilesStorage"',
             result.stdout,
         )
+        self.assertIn('"silenced_checks": []', result.stdout)
 
     def test_explicit_csrf_origins_are_https_structural_and_business_scoped(self):
         valid = {

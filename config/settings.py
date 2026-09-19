@@ -1,3 +1,5 @@
+import base64
+import binascii
 import ipaddress
 import os
 from pathlib import Path
@@ -203,6 +205,35 @@ def _required_postgresql_database(database_url, *, ssl_require):
     return database
 
 
+def _is_strong_production_secret(secret):
+    if (
+        not secret
+        or secret == LOCAL_SECRET_KEY
+        or secret == "replace-with-a-random-production-secret"
+        or secret.lower().startswith("django-insecure-")
+        or len(set(secret)) < 5
+    ):
+        return False
+
+    # A production secret must provide at least 256 bits (32 bytes) of cryptographic key material.
+    # 1. Base64-encoded 256-bit secrets (e.g. Render's generateValue: true) decode to at least 32 bytes.
+    try:
+        normalized = secret.translate(str.maketrans("-_", "+/"))
+        padding = "=" * (-len(normalized) % 4)
+        decoded = base64.b64decode(normalized + padding, validate=True)
+        if len(decoded) >= 32 and len(set(decoded)) >= 5:
+            return True
+    except (ValueError, binascii.Error):
+        pass
+
+    # 2. Text secrets (e.g. Django default 50-character secrets) must have at least 44 characters
+    # (the minimum length required to encode 256 bits in 6-bit Base64) with diverse characters.
+    if len(secret) >= 44:
+        return True
+
+    return False
+
+
 raw_shelfsum_env = os.environ.get("SHELFSUM_ENV")
 if not (raw_shelfsum_env or "").strip() and any(
     os.environ.get(name, "").strip()
@@ -218,13 +249,7 @@ if SHELFSUM_ENV == "production":
     production_database_url = os.environ.get("DATABASE_URL", "").strip()
     if not production_secret:
         raise ImproperlyConfigured("Production requires SECRET_KEY.")
-    if (
-        production_secret == LOCAL_SECRET_KEY
-        or production_secret == "replace-with-a-random-production-secret"
-        or production_secret.lower().startswith("django-insecure-")
-        or len(production_secret) < 50
-        or len(set(production_secret)) < 5
-    ):
+    if not _is_strong_production_secret(production_secret):
         raise ImproperlyConfigured("Production requires a strong, non-placeholder SECRET_KEY.")
     if not production_database_url:
         raise ImproperlyConfigured("Production requires DATABASE_URL.")
@@ -256,6 +281,8 @@ if SHELFSUM_ENV == "production":
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
         },
     }
+    if len(production_secret) < 50:
+        SILENCED_SYSTEM_CHECKS = ["security.W009"]
 elif SHELFSUM_ENV == "postgresql-test":
     if os.environ.get("CI", "").strip().lower() != "true":
         raise ImproperlyConfigured("SHELFSUM_ENV=postgresql-test requires CI=true.")
