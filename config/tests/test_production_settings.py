@@ -164,7 +164,12 @@ class ProductionSettingsSubprocessTests(TestCase):
             "abcde" * 10,
             "0123456789" * 5,
             "A" * 46 + "BCDE",
+            "abcde" * 9 + "fghij",
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            # Decodes to 32 bytes but fails decoded-byte diversity safeguard (< 5 distinct bytes):
+            "YWJjZGFiZGNhY2JkYWRiY2JjYWRiZGFjY2RhYmRjY2E=",
+            # Decodes to 32 bytes but fails decoded-byte frequency safeguard (> 10 occurrences of one byte):
+            "YWVmYWhpYWtsYW5vYXFyYXR1YXd4YXp7YX1+YYCBYYM=",
         ):
             with self.subTest(weak_secret=weak_secret):
                 environment = valid.copy()

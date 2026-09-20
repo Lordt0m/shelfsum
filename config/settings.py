@@ -207,13 +207,29 @@ def _required_postgresql_database(database_url, *, ssl_require):
 
 
 def _is_patterned_secret(secret):
+    """Check if the secret exhibits obvious repetitive or patterned structure.
+
+    Rejects:
+    - Dominant single-character repetition (> length // 2).
+    - Obvious repeated prefixes where a chunk repeats consecutively from the start
+      covering at least half the string (repeats >= 2 and repeats * chunk_size >= length // 2).
+    - Exact whole-string repetition across the entire length.
+
+    Note: This is a narrow anti-pattern check; it does not estimate entropy or prove randomness.
+    """
     length = len(secret)
     if length == 0:
         return True
     if max(Counter(secret).values()) > length // 2:
         return True
     for chunk_size in range(1, length // 2 + 1):
-        repeated = secret[:chunk_size] * (length // chunk_size) + secret[:length % chunk_size]
+        chunk = secret[:chunk_size]
+        repeats = 0
+        while secret[repeats * chunk_size : (repeats + 1) * chunk_size] == chunk:
+            repeats += 1
+        if repeats >= 2 and repeats * chunk_size >= length // 2:
+            return True
+        repeated = chunk * (length // chunk_size) + secret[: length % chunk_size]
         if secret == repeated:
             return True
     return False
@@ -223,15 +239,21 @@ def _validate_production_secret(secret):
     """Validate the production secret using a narrow, explicit acceptance policy.
 
     Accepts:
-    1. Structurally valid standard or URL-safe Base64 Render-compatible secrets
-       that decode to the expected 32 bytes of key material and are not patterned.
+    1. Standard or URL-safe Base64 Render-compatible secrets that decode to
+       exactly 32 bytes of key material and pass anti-pattern safeguards:
+       - passes string-level checks (non-placeholder, at least 5 distinct characters,
+         and not patterned);
+       - passes decoded-byte diversity (at least 5 distinct bytes in the 32 decoded bytes);
+       - passes decoded-byte frequency (no byte occurs more than 10 times in decoded bytes).
+       Structural validity is necessary but not sufficient and does not prove randomness.
     2. Ordinary text secrets following the established Django policy (at least 50
-       characters, at least 5 distinct characters) that are not patterned.
+       characters, at least 5 distinct characters) that pass string-level anti-pattern
+       safeguards.
 
-    Rejects empty, placeholder, local-development, short, repeated, or patterned values.
-    Returns (secret, is_render_base64). Note that structural validation, character
-    diversity, or successful decoding does not by itself prove cryptographic randomness
-    or entropy.
+    Rejects empty, placeholder, local-development, short, repeated, or patterned values
+    (including obvious repeated-prefix values).
+    Returns (secret, is_render_base64). Note that structural validity, character or byte
+    diversity, and successful decoding do not prove cryptographic randomness or entropy.
     """
     if not secret:
         raise ImproperlyConfigured("Production requires SECRET_KEY.")
@@ -244,7 +266,9 @@ def _validate_production_secret(secret):
     ):
         raise ImproperlyConfigured("Production requires a strong, non-placeholder SECRET_KEY.")
 
-    # 1. Structurally valid standard or URL-safe Base64 Render-compatible secret (32 bytes key material)
+    # 1. Standard or URL-safe Base64 Render-compatible secret decoding to exactly 32 bytes
+    # and passing decoded-byte diversity and frequency safeguards.
+    # Structural validity is necessary but not sufficient and does not prove randomness.
     if len(secret) in (43, 44):
         try:
             normalized = secret.translate(str.maketrans("-_", "+/"))
