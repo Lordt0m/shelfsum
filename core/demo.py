@@ -7,8 +7,9 @@ stock, immutability, and audit invariants as normal business activity.
 
 from collections import Counter
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
@@ -58,6 +59,51 @@ DEMO_CREDENTIALS = (
     DemoCredential(DEMO_OWNER_EMAIL, DEMO_OWNER_PASSWORD, "Adaeze", "Demo", Membership.Role.OWNER),
     DemoCredential(DEMO_STAFF_EMAIL, DEMO_STAFF_PASSWORD, "Bayo", "Sample", Membership.Role.STAFF),
 )
+
+LAGOS = ZoneInfo("Africa/Lagos")
+
+DEMO_TIMESTAMPS = {
+    "business_created": datetime(2026, 8, 1, 9, 0, 0, tzinfo=LAGOS),
+    "business_updated": datetime(2026, 8, 1, 10, 0, 0, tzinfo=LAGOS),
+    "owner_joined": datetime(2026, 8, 1, 9, 0, 0, tzinfo=LAGOS),
+    "staff_joined": datetime(2026, 8, 1, 9, 5, 0, tzinfo=LAGOS),
+    "owner_membership": datetime(2026, 8, 1, 9, 0, 0, tzinfo=LAGOS),
+    "staff_membership": datetime(2026, 8, 1, 9, 5, 0, tzinfo=LAGOS),
+    "products": {
+        "DEMO-NIA-500": {
+            "created": datetime(2026, 8, 1, 9, 10, 0, tzinfo=LAGOS),
+            "updated": datetime(2026, 8, 1, 9, 10, 0, tzinfo=LAGOS),
+        },
+        "DEMO-KOR-100": {
+            "created": datetime(2026, 8, 1, 9, 11, 0, tzinfo=LAGOS),
+            "updated": datetime(2026, 8, 1, 9, 11, 0, tzinfo=LAGOS),
+        },
+        "DEMO-BLU-500": {
+            "created": datetime(2026, 8, 1, 9, 12, 0, tzinfo=LAGOS),
+            "updated": datetime(2026, 8, 1, 9, 12, 0, tzinfo=LAGOS),
+        },
+        "DEMO-SUN-330": {
+            "created": datetime(2026, 8, 1, 9, 13, 0, tzinfo=LAGOS),
+            "updated": datetime(2026, 8, 1, 9, 13, 0, tzinfo=LAGOS),
+        },
+        "DEMO-PAP-090": {
+            "created": datetime(2026, 8, 1, 9, 14, 0, tzinfo=LAGOS),
+            "updated": datetime(2026, 8, 1, 10, 0, 0, tzinfo=LAGOS),
+        },
+    },
+    "audit_deactivate_pap": datetime(2026, 8, 1, 10, 0, 0, tzinfo=LAGOS),
+    "expense_original": datetime(2026, 8, 5, 11, 0, 0, tzinfo=LAGOS),
+    "expense_replacement": datetime(2026, 8, 5, 11, 30, 0, tzinfo=LAGOS),
+    "purchase_001": datetime(2026, 8, 8, 10, 0, 0, tzinfo=LAGOS),
+    "sale_001": datetime(2026, 8, 12, 14, 0, 0, tzinfo=LAGOS),
+    "purchase_002": datetime(2026, 8, 15, 10, 0, 0, tzinfo=LAGOS),
+    "sale_002": datetime(2026, 8, 19, 15, 0, 0, tzinfo=LAGOS),
+    "purchase_void_created": datetime(2026, 8, 22, 11, 0, 0, tzinfo=LAGOS),
+    "purchase_void_voided": datetime(2026, 8, 22, 11, 30, 0, tzinfo=LAGOS),
+    "sale_void_created": datetime(2026, 8, 25, 16, 0, 0, tzinfo=LAGOS),
+    "sale_void_voided": datetime(2026, 8, 25, 16, 30, 0, tzinfo=LAGOS),
+    "stock_adjustment_found": datetime(2026, 8, 28, 17, 0, 0, tzinfo=LAGOS),
+}
 
 _PRODUCTS = (
     {
@@ -296,7 +342,282 @@ def _create_canonical_dataset(*, owner, staff):
     # to a committed request. Runtime writes still use ensure_business_write_allowed.
     business.is_demo = True
     business.save(update_fields=["is_demo", "updated_at"])
+    _apply_canonical_demo_timestamps(business=business, owner=owner, staff=staff)
     return business
+
+
+def _apply_canonical_demo_timestamps(*, business, owner, staff):
+    """Normalize all demo timestamps to the canonical August 2026 schedule."""
+    user_model = get_user_model()
+    user_model._base_manager.filter(pk=owner.pk).update(
+        date_joined=DEMO_TIMESTAMPS["owner_joined"]
+    )
+    user_model._base_manager.filter(pk=staff.pk).update(
+        date_joined=DEMO_TIMESTAMPS["staff_joined"]
+    )
+    owner.refresh_from_db(fields=["date_joined"])
+    staff.refresh_from_db(fields=["date_joined"])
+
+    Business._base_manager.filter(pk=business.pk).update(
+        created_at=DEMO_TIMESTAMPS["business_created"],
+        updated_at=DEMO_TIMESTAMPS["business_updated"],
+    )
+    business.refresh_from_db(fields=["created_at", "updated_at"])
+
+    Membership._base_manager.filter(business=business, user=owner).update(
+        created_at=DEMO_TIMESTAMPS["owner_membership"]
+    )
+    Membership._base_manager.filter(business=business, user=staff).update(
+        created_at=DEMO_TIMESTAMPS["staff_membership"]
+    )
+
+    for sku, ts in DEMO_TIMESTAMPS["products"].items():
+        Product._base_manager.filter(business=business, sku=sku).update(
+            created_at=ts["created"],
+            updated_at=ts["updated"],
+        )
+
+    for sku, ts in DEMO_TIMESTAMPS["products"].items():
+        StockAdjustment._base_manager.filter(
+            business=business,
+            product__sku=sku,
+            reason=StockAdjustment.Reason.OPENING,
+        ).update(created_at=ts["created"])
+
+    StockAdjustment._base_manager.filter(
+        business=business,
+        product__sku="DEMO-KOR-100",
+        reason=StockAdjustment.Reason.FOUND,
+    ).update(created_at=DEMO_TIMESTAMPS["stock_adjustment_found"])
+
+    for sku, ts in DEMO_TIMESTAMPS["products"].items():
+        StockMovement._base_manager.filter(
+            business=business,
+            stock_adjustment__product__sku=sku,
+            stock_adjustment__reason=StockAdjustment.Reason.OPENING,
+        ).update(created_at=ts["created"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        stock_adjustment__product__sku="DEMO-KOR-100",
+        stock_adjustment__reason=StockAdjustment.Reason.FOUND,
+    ).update(created_at=DEMO_TIMESTAMPS["stock_adjustment_found"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        purchase_line__purchase__reference="DEMO-PUR-001",
+    ).update(created_at=DEMO_TIMESTAMPS["purchase_001"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        purchase_line__purchase__reference="DEMO-PUR-002",
+    ).update(created_at=DEMO_TIMESTAMPS["purchase_002"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        purchase_line__purchase__reference="DEMO-PUR-VOID",
+    ).update(created_at=DEMO_TIMESTAMPS["purchase_void_created"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        kind=StockMovement.Kind.REVERSAL,
+        reversal_of__purchase_line__purchase__reference="DEMO-PUR-VOID",
+    ).update(created_at=DEMO_TIMESTAMPS["purchase_void_voided"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        sale_line__sale__reference="DEMO-SAL-001",
+    ).update(created_at=DEMO_TIMESTAMPS["sale_001"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        sale_line__sale__reference="DEMO-SAL-002",
+    ).update(created_at=DEMO_TIMESTAMPS["sale_002"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        sale_line__sale__reference="DEMO-SAL-VOID",
+    ).update(created_at=DEMO_TIMESTAMPS["sale_void_created"])
+
+    StockMovement._base_manager.filter(
+        business=business,
+        kind=StockMovement.Kind.REVERSAL,
+        reversal_of__sale_line__sale__reference="DEMO-SAL-VOID",
+    ).update(created_at=DEMO_TIMESTAMPS["sale_void_voided"])
+
+    Purchase._base_manager.filter(business=business, reference="DEMO-PUR-001").update(
+        created_at=DEMO_TIMESTAMPS["purchase_001"],
+        updated_at=DEMO_TIMESTAMPS["purchase_001"],
+    )
+    Purchase._base_manager.filter(business=business, reference="DEMO-PUR-002").update(
+        created_at=DEMO_TIMESTAMPS["purchase_002"],
+        updated_at=DEMO_TIMESTAMPS["purchase_002"],
+    )
+    Purchase._base_manager.filter(business=business, reference="DEMO-PUR-VOID").update(
+        created_at=DEMO_TIMESTAMPS["purchase_void_created"],
+        updated_at=DEMO_TIMESTAMPS["purchase_void_voided"],
+    )
+
+    Sale._base_manager.filter(business=business, reference="DEMO-SAL-001").update(
+        created_at=DEMO_TIMESTAMPS["sale_001"],
+        updated_at=DEMO_TIMESTAMPS["sale_001"],
+    )
+    Sale._base_manager.filter(business=business, reference="DEMO-SAL-002").update(
+        created_at=DEMO_TIMESTAMPS["sale_002"],
+        updated_at=DEMO_TIMESTAMPS["sale_002"],
+    )
+    Sale._base_manager.filter(business=business, reference="DEMO-SAL-VOID").update(
+        created_at=DEMO_TIMESTAMPS["sale_void_created"],
+        updated_at=DEMO_TIMESTAMPS["sale_void_voided"],
+    )
+
+    Expense._base_manager.filter(
+        business=business,
+        description="Fictional August premises estimate",
+    ).update(created_at=DEMO_TIMESTAMPS["expense_original"])
+
+    Expense._base_manager.filter(
+        business=business,
+        description="Fictional August premises correction",
+    ).update(created_at=DEMO_TIMESTAMPS["expense_replacement"])
+
+    AuditEvent._base_manager.filter(
+        business=business,
+        action="business.created",
+        object_type="businesses.Business",
+        object_identifier=str(business.pk),
+    ).update(created_at=DEMO_TIMESTAMPS["business_created"])
+
+    staff_membership = Membership._base_manager.filter(business=business, user=staff).first()
+    if staff_membership:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="membership.staff_added",
+            object_type="businesses.Membership",
+            object_identifier=str(staff_membership.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["staff_membership"])
+
+    for sku, ts in DEMO_TIMESTAMPS["products"].items():
+        prod = Product._base_manager.filter(business=business, sku=sku).first()
+        if prod:
+            AuditEvent._base_manager.filter(
+                business=business,
+                action="product.created",
+                object_type="catalogue.Product",
+                object_identifier=str(prod.pk),
+            ).update(created_at=ts["created"])
+
+    pap_prod = Product._base_manager.filter(business=business, sku="DEMO-PAP-090").first()
+    if pap_prod:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="product.deactivated",
+            object_type="catalogue.Product",
+            object_identifier=str(pap_prod.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["audit_deactivate_pap"])
+
+    pur_001 = Purchase._base_manager.filter(business=business, reference="DEMO-PUR-001").first()
+    if pur_001:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="purchase.completed",
+            object_type="purchases.Purchase",
+            object_identifier=str(pur_001.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["purchase_001"])
+
+    pur_002 = Purchase._base_manager.filter(business=business, reference="DEMO-PUR-002").first()
+    if pur_002:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="purchase.completed",
+            object_type="purchases.Purchase",
+            object_identifier=str(pur_002.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["purchase_002"])
+
+    pur_void = Purchase._base_manager.filter(business=business, reference="DEMO-PUR-VOID").first()
+    if pur_void:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="purchase.completed",
+            object_type="purchases.Purchase",
+            object_identifier=str(pur_void.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["purchase_void_created"])
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="purchase.voided",
+            object_type="purchases.Purchase",
+            object_identifier=str(pur_void.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["purchase_void_voided"])
+
+    sal_001 = Sale._base_manager.filter(business=business, reference="DEMO-SAL-001").first()
+    if sal_001:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="sale.completed",
+            object_type="sales.Sale",
+            object_identifier=str(sal_001.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["sale_001"])
+
+    sal_002 = Sale._base_manager.filter(business=business, reference="DEMO-SAL-002").first()
+    if sal_002:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="sale.completed",
+            object_type="sales.Sale",
+            object_identifier=str(sal_002.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["sale_002"])
+
+    sal_void = Sale._base_manager.filter(business=business, reference="DEMO-SAL-VOID").first()
+    if sal_void:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="sale.completed",
+            object_type="sales.Sale",
+            object_identifier=str(sal_void.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["sale_void_created"])
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="sale.voided",
+            object_type="sales.Sale",
+            object_identifier=str(sal_void.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["sale_void_voided"])
+
+    exp_orig = Expense._base_manager.filter(
+        business=business,
+        description="Fictional August premises estimate",
+    ).first()
+    if exp_orig:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="expense.recorded",
+            object_type="expenses.Expense",
+            object_identifier=str(exp_orig.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["expense_original"])
+
+    exp_repl = Expense._base_manager.filter(
+        business=business,
+        description="Fictional August premises correction",
+    ).first()
+    if exp_repl:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="expense.corrected",
+            object_type="expenses.Expense",
+            object_identifier=str(exp_repl.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["expense_replacement"])
+
+    adj_found = StockAdjustment._base_manager.filter(
+        business=business,
+        product__sku="DEMO-KOR-100",
+        reason=StockAdjustment.Reason.FOUND,
+    ).first()
+    if adj_found:
+        AuditEvent._base_manager.filter(
+            business=business,
+            action="stock.adjusted",
+            object_type="inventory.StockAdjustment",
+            object_identifier=str(adj_found.pk),
+        ).update(created_at=DEMO_TIMESTAMPS["stock_adjustment_found"])
 
 
 def _fail(message):
@@ -623,6 +944,72 @@ def _verify_canonical_dataset(*, business, owner, staff):
     if actual_events != expected_events:
         _fail("Audit Event attribution, affected-object identity, or summary drifted")
 
+    def _in_august_2026(dt):
+        return dt is not None and DEMO_REFERENCE_START <= dt.astimezone(LAGOS).date() <= DEMO_REFERENCE_END
+
+    if not _in_august_2026(business.created_at) or not _in_august_2026(business.updated_at):
+        _fail("Business timestamps drifted outside August 2026")
+    if business.created_at != DEMO_TIMESTAMPS["business_created"]:
+        _fail("Business created_at drifted")
+    if business.updated_at != DEMO_TIMESTAMPS["business_updated"]:
+        _fail("Business updated_at drifted")
+
+    if not _in_august_2026(owner.date_joined) or not _in_august_2026(staff.date_joined):
+        _fail("Demo user date_joined drifted outside August 2026")
+    if owner.date_joined != DEMO_TIMESTAMPS["owner_joined"]:
+        _fail("Demo Owner date_joined drifted")
+    if staff.date_joined != DEMO_TIMESTAMPS["staff_joined"]:
+        _fail("Demo Staff Member date_joined drifted")
+
+    for membership in memberships:
+        if not _in_august_2026(membership.created_at):
+            _fail(f"Membership {membership.pk} timestamp drifted outside August 2026")
+        expected_membership_ts = (
+            DEMO_TIMESTAMPS["owner_membership"]
+            if membership.user_id == owner.pk
+            else DEMO_TIMESTAMPS["staff_membership"]
+        )
+        if membership.created_at != expected_membership_ts:
+            _fail(f"Membership {membership.pk} timestamp drifted")
+
+    for product in products:
+        if not _in_august_2026(product.created_at) or not _in_august_2026(product.updated_at):
+            _fail(f"Product {product.sku} timestamps drifted outside August 2026")
+        expected_product_ts = DEMO_TIMESTAMPS["products"][product.sku]
+        if (
+            product.created_at != expected_product_ts["created"]
+            or product.updated_at != expected_product_ts["updated"]
+        ):
+            _fail(f"Product {product.sku} timestamp schedule drifted")
+
+    for purchase in purchases:
+        if not _in_august_2026(purchase.created_at) or not _in_august_2026(purchase.updated_at):
+            _fail(f"Purchase {purchase.reference} timestamps drifted outside August 2026")
+
+    for sale in sales:
+        if not _in_august_2026(sale.created_at) or not _in_august_2026(sale.updated_at):
+            _fail(f"Sale {sale.reference} timestamps drifted outside August 2026")
+
+    for expense in expenses:
+        if not _in_august_2026(expense.created_at):
+            _fail(f"Expense {expense.pk} timestamp drifted outside August 2026")
+    if original.created_at != DEMO_TIMESTAMPS["expense_original"]:
+        _fail("original Expense timestamp drifted")
+    if replacement.created_at != DEMO_TIMESTAMPS["expense_replacement"]:
+        _fail("replacement Expense timestamp drifted")
+
+    for adjustment in adjustments:
+        if not _in_august_2026(adjustment.created_at):
+            _fail(f"StockAdjustment {adjustment.pk} timestamp drifted outside August 2026")
+
+    for movement in movements:
+        if not _in_august_2026(movement.created_at):
+            _fail(f"StockMovement {movement.pk} timestamp drifted outside August 2026")
+
+    for event in AuditEvent.objects.filter(business=business):
+        if not _in_august_2026(event.created_at):
+            _fail(f"AuditEvent {event.pk} timestamp drifted outside August 2026")
+
 
 @transaction.atomic
 def seed_demo_business():
@@ -656,7 +1043,9 @@ def seed_demo_business():
             first_name="Bayo",
             last_name="Sample",
         )
-        return _create_canonical_dataset(owner=owner, staff=staff)
+        business = _create_canonical_dataset(owner=owner, staff=staff)
+        _verify_canonical_dataset(business=business, owner=owner, staff=staff)
+        return business
 
     if len(business_matches) != 1 or owner is None or staff is None:
         _fail("canonical Business and both named users must be present together")
@@ -681,6 +1070,7 @@ def seed_demo_business():
         _fail("Demo Staff Member identity drifted")
     if Membership.objects.filter(user__in=(owner, staff)).exclude(business=business).exists():
         _fail("a named demo user belongs to another Business")
+    _apply_canonical_demo_timestamps(business=business, owner=owner, staff=staff)
     _verify_canonical_dataset(business=business, owner=owner, staff=staff)
 
     owner.set_password(DEMO_OWNER_PASSWORD)

@@ -1,3 +1,4 @@
+import csv
 from datetime import datetime
 from decimal import Decimal
 from io import StringIO
@@ -11,6 +12,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.management import CommandError, call_command
 from django.db import close_old_connections, connection, models
 from django.test import TestCase, TransactionTestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from auditing.models import AuditEvent
@@ -25,6 +27,8 @@ from core.demo import (
     DEMO_REFERENCE_START,
     DEMO_STAFF_EMAIL,
     DEMO_STAFF_PASSWORD,
+    DEMO_TIMESTAMPS,
+    LAGOS,
     DemoSeedError,
     seed_demo_business,
 )
@@ -290,13 +294,155 @@ class DemoSeedCommandTests(TestCase):
         )
         movements = build_movement_report(
             business=business,
-            filters=MovementReportFilters(kind="all", product_id=None, date_from=None, date_to=None),
+            filters=MovementReportFilters.from_query_params(
+                {
+                    "kind": "all",
+                    "date_from": DEMO_REFERENCE_START.isoformat(),
+                    "date_to": DEMO_REFERENCE_END.isoformat(),
+                },
+                business=business,
+            ),
         )
         self.assertEqual((len(sales.rows), sales.revenue), (2, Decimal("25800.00")))
         self.assertEqual((len(purchases.rows), purchases.total), (2, Decimal("31550.00")))
         self.assertEqual((len(expenses.rows), expenses.total), (1, Decimal("275000.00")))
         self.assertEqual((len(stock.rows), stock.total), (4, Decimal("59000.00")))
         self.assertEqual((len(movements.rows), movements.net_change), (18, 87))
+
+    def test_demo_records_persist_stable_august_2026_timestamps_without_clock_mocking(self):
+        business = seed_demo_business()
+        owner = get_user_model().objects.get(email=DEMO_OWNER_EMAIL)
+        staff = get_user_model().objects.get(email=DEMO_STAFF_EMAIL)
+
+        self.assertEqual(business.created_at, DEMO_TIMESTAMPS["business_created"])
+        self.assertEqual(business.updated_at, DEMO_TIMESTAMPS["business_updated"])
+        self.assertEqual(owner.date_joined, DEMO_TIMESTAMPS["owner_joined"])
+        self.assertEqual(staff.date_joined, DEMO_TIMESTAMPS["staff_joined"])
+
+        memberships = {m.user_id: m for m in Membership.objects.filter(business=business)}
+        self.assertEqual(memberships[owner.pk].created_at, DEMO_TIMESTAMPS["owner_membership"])
+        self.assertEqual(memberships[staff.pk].created_at, DEMO_TIMESTAMPS["staff_membership"])
+
+        products = {p.sku: p for p in Product.objects.filter(business=business)}
+        for sku, expected_ts in DEMO_TIMESTAMPS["products"].items():
+            self.assertEqual(products[sku].created_at, expected_ts["created"])
+            self.assertEqual(products[sku].updated_at, expected_ts["updated"])
+
+        for model in (Purchase, Sale, Expense, StockAdjustment, StockMovement, AuditEvent):
+            for obj in model.objects.filter(business=business):
+                local_dt = timezone.localtime(obj.created_at, LAGOS)
+                self.assertTrue(
+                    DEMO_REFERENCE_START <= local_dt.date() <= DEMO_REFERENCE_END,
+                    f"{model.__name__} {obj.pk} created_at {local_dt} is outside August 2026",
+                )
+
+        self.assertEqual(StockMovement.objects.filter(business=business).count(), 18)
+        self.assertEqual(AuditEvent.objects.filter(business=business).count(), 19)
+
+    def test_rerun_seed_demo_repairs_drifted_timestamps_without_affecting_unrelated_business(self):
+        unrelated_owner = get_user_model().objects.create_user(
+            email="regular-owner@example.com",
+            password="unrelated-password-123",
+        )
+        unrelated_business = Business.objects.create(name="Independent Bakery")
+        Membership.objects.create(
+            user=unrelated_owner,
+            business=unrelated_business,
+            role=Membership.Role.OWNER,
+        )
+        create_product(
+            business=unrelated_business,
+            actor=unrelated_owner,
+            details=ProductCreation(
+                name="Sourdough Loaf",
+                sku="BREAD-001",
+                description="Fresh bread",
+                selling_price=Decimal("1500.00"),
+                unit_cost=Decimal("900.00"),
+                opening_quantity=10,
+                low_stock_threshold=2,
+            ),
+        )
+        unrelated_movement = StockMovement.objects.get(business=unrelated_business)
+        unrelated_movement_created_at = unrelated_movement.created_at
+        unrelated_business_created_at = unrelated_business.created_at
+
+        # First run of demo seed
+        demo_business = seed_demo_business()
+
+        # Simulate drift by corrupting demo timestamps to a future/drifted date
+        drifted_time = datetime(2026, 9, 20, 10, 0, 0, tzinfo=LAGOS)
+        StockMovement._base_manager.filter(business=demo_business).update(created_at=drifted_time)
+        AuditEvent._base_manager.filter(business=demo_business).update(created_at=drifted_time)
+        Purchase._base_manager.filter(business=demo_business).update(created_at=drifted_time)
+        Sale._base_manager.filter(business=demo_business).update(created_at=drifted_time)
+        Expense._base_manager.filter(business=demo_business).update(created_at=drifted_time)
+        StockAdjustment._base_manager.filter(business=demo_business).update(created_at=drifted_time)
+
+        # Change demo staff password to verify reset on rerun
+        demo_staff = get_user_model().objects.get(email=DEMO_STAFF_EMAIL)
+        demo_staff.set_password("drifted-tampered-password")
+        demo_staff.save(update_fields=["password"])
+        self.assertFalse(demo_staff.check_password(DEMO_STAFF_PASSWORD))
+
+        # Rerun seed_demo_business
+        seed_demo_business()
+
+        # Demo timestamps must be restored to canonical August 2026
+        for movement in StockMovement.objects.filter(business=demo_business):
+            self.assertTrue(
+                DEMO_REFERENCE_START <= timezone.localtime(movement.created_at, LAGOS).date() <= DEMO_REFERENCE_END
+            )
+        for event in AuditEvent.objects.filter(business=demo_business):
+            self.assertTrue(
+                DEMO_REFERENCE_START <= timezone.localtime(event.created_at, LAGOS).date() <= DEMO_REFERENCE_END
+            )
+
+        # Demo credentials must be reset
+        demo_staff.refresh_from_db()
+        self.assertTrue(demo_staff.check_password(DEMO_STAFF_PASSWORD))
+
+        # Unrelated business must be completely untouched
+        unrelated_business.refresh_from_db()
+        unrelated_movement.refresh_from_db()
+        self.assertEqual(unrelated_business.created_at, unrelated_business_created_at)
+        self.assertEqual(unrelated_movement.created_at, unrelated_movement_created_at)
+        self.assertEqual(unrelated_business.name, "Independent Bakery")
+        self.assertEqual(Business.objects.count(), 2)
+
+    def test_august_filtered_movement_report_html_and_csv_contain_expected_records(self):
+        seed_demo_business()
+        owner = get_user_model().objects.get(email=DEMO_OWNER_EMAIL)
+        staff = get_user_model().objects.get(email=DEMO_STAFF_EMAIL)
+
+        for user in (owner, staff):
+            self.client.force_login(user)
+            params = {
+                "kind": "all",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+            }
+            html = self.client.get(reverse("reports_movements"), params)
+            self.assertEqual(html.status_code, 200)
+            self.assertContains(html, "Net change")
+            self.assertContains(html, "87")
+            self.assertContains(html, "NiaPalm Twist Noodles")
+            self.assertContains(html, "KoraMoo Sachet")
+            self.assertContains(html, "BlueBasin Wash Powder")
+            self.assertContains(html, "SunsetFizz Can")
+            self.assertContains(html, "PaperMoon Soap Bar")
+            self.assertNotContains(html, "No Stock Movements match these filters.")
+
+            csv_res = self.client.get(reverse("reports_movements_csv"), params)
+            self.assertEqual(csv_res.status_code, 200)
+            csv_rows = list(csv.DictReader(StringIO(csv_res.content.decode("utf-8"))))
+            self.assertEqual(len(csv_rows), 18)
+            self.assertEqual(
+                sum(int(row["Quantity change"]) for row in csv_rows),
+                87,
+            )
+            for row in csv_rows:
+                self.assertTrue(row["Lagos timestamp"].startswith("2026-08-"))
 
 
 @skipUnless(

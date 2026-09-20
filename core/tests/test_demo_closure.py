@@ -38,12 +38,8 @@ from auditing.models import AuditEvent
 from auditing.services import record_audit_event
 
 
-DEMO_CREATED_AT = datetime(2026, 8, 20, 12, tzinfo=ZoneInfo("Africa/Lagos"))
-
-
 def seed_demo_fixture():
-    with patch("django.utils.timezone.now", return_value=DEMO_CREATED_AT):
-        return seed_demo_business()
+    return seed_demo_business()
 
 
 def model_rows(model, **filters):
