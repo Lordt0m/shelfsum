@@ -140,7 +140,7 @@ py -3.13 -m venv .venv
 
 Open `http://127.0.0.1:8000/`. The health endpoint is `http://127.0.0.1:8000/health/`.
 
-The seed command is deterministic: it creates the canonical fictional Business on the first run and verifies its logical manifest on rerun. It refuses partial or drifted canonical data rather than silently overwriting it.
+The seed command is deterministic: it creates the canonical fictional Business on the first run, and on rerun verifies and preserves the canonical fictional dataset without duplicating records while intentionally resetting the two published Demo passwords to their canonical values. It refuses partial or drifted canonical data rather than silently overwriting it.
 
 ## Testing
 

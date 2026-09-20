@@ -159,6 +159,11 @@ class ProductionSettingsSubprocessTests(TestCase):
             "0123456789abcdef0123456789abcdef",
             "a" * 64,
             "1234" * 11,
+            "abcde" * 9,
+            "A" * 40 + "BCDE",
+            "abcde" * 10,
+            "0123456789" * 5,
+            "A" * 46 + "BCDE",
             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         ):
             with self.subTest(weak_secret=weak_secret):
