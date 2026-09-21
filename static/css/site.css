@@ -41,6 +41,8 @@ footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
   min-height: 76px;
   border-bottom: 1px solid var(--line);
 }
@@ -59,7 +61,8 @@ footer {
 nav {
   align-items: center;
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 12px 24px;
 }
 
 nav a {
@@ -583,7 +586,7 @@ footer p {
   text-transform: uppercase;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .site-header,
   main,
   footer {
