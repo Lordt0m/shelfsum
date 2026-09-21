@@ -34,7 +34,7 @@ from core.demo import (
 )
 from expenses.models import Expense
 from inventory.models import StockAdjustment, StockMovement
-from purchases.models import Purchase
+from purchases.models import Purchase, PurchaseLine
 from sales.models import Sale, SaleLine
 from businesses.dashboard import dashboard_context
 from reports.expense import ExpenseReportFilters, build_expense_report
@@ -336,8 +336,169 @@ class DemoSeedCommandTests(TestCase):
                     f"{model.__name__} {obj.pk} created_at {local_dt} is outside August 2026",
                 )
 
+        pur_001 = Purchase.objects.get(business=business, reference="DEMO-PUR-001")
+        pur_002 = Purchase.objects.get(business=business, reference="DEMO-PUR-002")
+        pur_void = Purchase.objects.get(business=business, reference="DEMO-PUR-VOID")
+        self.assertEqual(pur_001.created_at, DEMO_TIMESTAMPS["purchase_001"])
+        self.assertEqual(pur_001.updated_at, DEMO_TIMESTAMPS["purchase_001"])
+        self.assertEqual(pur_002.created_at, DEMO_TIMESTAMPS["purchase_002"])
+        self.assertEqual(pur_002.updated_at, DEMO_TIMESTAMPS["purchase_002"])
+        self.assertEqual(pur_void.created_at, DEMO_TIMESTAMPS["purchase_void_created"])
+        self.assertEqual(pur_void.updated_at, DEMO_TIMESTAMPS["purchase_void_voided"])
+
+        sal_001 = Sale.objects.get(business=business, reference="DEMO-SAL-001")
+        sal_002 = Sale.objects.get(business=business, reference="DEMO-SAL-002")
+        sal_void = Sale.objects.get(business=business, reference="DEMO-SAL-VOID")
+        self.assertEqual(sal_001.created_at, DEMO_TIMESTAMPS["sale_001"])
+        self.assertEqual(sal_001.updated_at, DEMO_TIMESTAMPS["sale_001"])
+        self.assertEqual(sal_002.created_at, DEMO_TIMESTAMPS["sale_002"])
+        self.assertEqual(sal_002.updated_at, DEMO_TIMESTAMPS["sale_002"])
+        self.assertEqual(sal_void.created_at, DEMO_TIMESTAMPS["sale_void_created"])
+        self.assertEqual(sal_void.updated_at, DEMO_TIMESTAMPS["sale_void_voided"])
+
+        exp_orig = Expense.objects.get(business=business, description="Fictional August premises estimate")
+        exp_repl = Expense.objects.get(business=business, description="Fictional August premises correction")
+        self.assertEqual(exp_orig.created_at, DEMO_TIMESTAMPS["expense_original"])
+        self.assertEqual(exp_repl.created_at, DEMO_TIMESTAMPS["expense_replacement"])
+
+        for sku, expected_ts in DEMO_TIMESTAMPS["products"].items():
+            adj = StockAdjustment.objects.get(
+                business=business, product__sku=sku, reason=StockAdjustment.Reason.OPENING
+            )
+            self.assertEqual(adj.created_at, expected_ts["created"])
+        adj_found = StockAdjustment.objects.get(
+            business=business, product__sku="DEMO-KOR-100", reason=StockAdjustment.Reason.FOUND
+        )
+        self.assertEqual(adj_found.created_at, DEMO_TIMESTAMPS["stock_adjustment_found"])
+
         self.assertEqual(StockMovement.objects.filter(business=business).count(), 18)
+        for sku, expected_ts in DEMO_TIMESTAMPS["products"].items():
+            mov = StockMovement.objects.get(
+                business=business,
+                stock_adjustment__product__sku=sku,
+                stock_adjustment__reason=StockAdjustment.Reason.OPENING,
+            )
+            self.assertEqual(mov.created_at, expected_ts["created"])
+        mov_found = StockMovement.objects.get(
+            business=business,
+            stock_adjustment__product__sku="DEMO-KOR-100",
+            stock_adjustment__reason=StockAdjustment.Reason.FOUND,
+        )
+        self.assertEqual(mov_found.created_at, DEMO_TIMESTAMPS["stock_adjustment_found"])
+        for mov in StockMovement.objects.filter(business=business, purchase_line__purchase__reference="DEMO-PUR-001"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["purchase_001"])
+        for mov in StockMovement.objects.filter(business=business, purchase_line__purchase__reference="DEMO-PUR-002"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["purchase_002"])
+        mov_pur_void = StockMovement.objects.get(business=business, purchase_line__purchase__reference="DEMO-PUR-VOID")
+        self.assertEqual(mov_pur_void.created_at, DEMO_TIMESTAMPS["purchase_void_created"])
+        mov_pur_rev = StockMovement.objects.get(
+            business=business,
+            kind=StockMovement.Kind.REVERSAL,
+            reversal_of__purchase_line__purchase__reference="DEMO-PUR-VOID",
+        )
+        self.assertEqual(mov_pur_rev.created_at, DEMO_TIMESTAMPS["purchase_void_voided"])
+        for mov in StockMovement.objects.filter(business=business, sale_line__sale__reference="DEMO-SAL-001"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["sale_001"])
+        for mov in StockMovement.objects.filter(business=business, sale_line__sale__reference="DEMO-SAL-002"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["sale_002"])
+        mov_sal_void = StockMovement.objects.get(business=business, sale_line__sale__reference="DEMO-SAL-VOID")
+        self.assertEqual(mov_sal_void.created_at, DEMO_TIMESTAMPS["sale_void_created"])
+        mov_sal_rev = StockMovement.objects.get(
+            business=business,
+            kind=StockMovement.Kind.REVERSAL,
+            reversal_of__sale_line__sale__reference="DEMO-SAL-VOID",
+        )
+        self.assertEqual(mov_sal_rev.created_at, DEMO_TIMESTAMPS["sale_void_voided"])
+
         self.assertEqual(AuditEvent.objects.filter(business=business).count(), 19)
+        self.assertEqual(
+            AuditEvent.objects.get(business=business, action="business.created").created_at,
+            DEMO_TIMESTAMPS["business_created"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(business=business, action="membership.staff_added").created_at,
+            DEMO_TIMESTAMPS["staff_membership"],
+        )
+        for sku, expected_ts in DEMO_TIMESTAMPS["products"].items():
+            prod = Product.objects.get(business=business, sku=sku)
+            self.assertEqual(
+                AuditEvent.objects.get(
+                    business=business,
+                    action="product.created",
+                    object_identifier=str(prod.pk),
+                ).created_at,
+                expected_ts["created"],
+            )
+        self.assertEqual(
+            AuditEvent.objects.get(business=business, action="product.deactivated").created_at,
+            DEMO_TIMESTAMPS["audit_deactivate_pap"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="purchase.completed", object_identifier=str(pur_001.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_001"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="purchase.completed", object_identifier=str(pur_002.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_002"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="purchase.completed", object_identifier=str(pur_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_void_created"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="purchase.voided", object_identifier=str(pur_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_void_voided"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="sale.completed", object_identifier=str(sal_001.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_001"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="sale.completed", object_identifier=str(sal_002.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_002"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="sale.completed", object_identifier=str(sal_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_void_created"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="sale.voided", object_identifier=str(sal_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_void_voided"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="expense.recorded", object_identifier=str(exp_orig.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["expense_original"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="expense.corrected", object_identifier=str(exp_repl.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["expense_replacement"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=business, action="stock.adjusted", object_identifier=str(adj_found.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["stock_adjustment_found"],
+        )
 
     def test_rerun_seed_demo_repairs_drifted_timestamps_without_affecting_unrelated_business(self):
         unrelated_owner = get_user_model().objects.create_user(
@@ -370,12 +531,51 @@ class DemoSeedCommandTests(TestCase):
         # First run of demo seed
         demo_business = seed_demo_business()
 
-        # Simulate drift by corrupting demo timestamps to a future/drifted date
+        # Capture canonical model counts before corrupting timestamps
+        tracked_models = (
+            Business,
+            Membership,
+            Product,
+            Purchase,
+            PurchaseLine,
+            Sale,
+            SaleLine,
+            Expense,
+            StockAdjustment,
+            StockMovement,
+            AuditEvent,
+        )
+        canonical_counts_before = {
+            model.__name__: (
+                model.objects.filter(business=demo_business).count()
+                if hasattr(model, "business")
+                else (
+                    model.objects.filter(purchase__business=demo_business).count()
+                    if hasattr(model, "purchase")
+                    else (
+                        model.objects.filter(sale__business=demo_business).count()
+                        if hasattr(model, "sale")
+                        else model.objects.count()
+                    )
+                )
+            )
+            for model in tracked_models
+        }
+        total_counts_before = {
+            model.__name__: model.objects.count()
+            for model in tracked_models
+        }
+
+        # Simulate drift by corrupting demo timestamps to a future/drifted date across all types
         drifted_time = datetime(2026, 9, 20, 10, 0, 0, tzinfo=LAGOS)
         StockMovement._base_manager.filter(business=demo_business).update(created_at=drifted_time)
         AuditEvent._base_manager.filter(business=demo_business).update(created_at=drifted_time)
-        Purchase._base_manager.filter(business=demo_business).update(created_at=drifted_time)
-        Sale._base_manager.filter(business=demo_business).update(created_at=drifted_time)
+        Purchase._base_manager.filter(business=demo_business).update(
+            created_at=drifted_time, updated_at=drifted_time
+        )
+        Sale._base_manager.filter(business=demo_business).update(
+            created_at=drifted_time, updated_at=drifted_time
+        )
         Expense._base_manager.filter(business=demo_business).update(created_at=drifted_time)
         StockAdjustment._base_manager.filter(business=demo_business).update(created_at=drifted_time)
 
@@ -388,15 +588,202 @@ class DemoSeedCommandTests(TestCase):
         # Rerun seed_demo_business
         seed_demo_business()
 
-        # Demo timestamps must be restored to canonical August 2026
-        for movement in StockMovement.objects.filter(business=demo_business):
-            self.assertTrue(
-                DEMO_REFERENCE_START <= timezone.localtime(movement.created_at, LAGOS).date() <= DEMO_REFERENCE_END
+        # Prove that canonical record counts remain unchanged
+        canonical_counts_after = {
+            model.__name__: (
+                model.objects.filter(business=demo_business).count()
+                if hasattr(model, "business")
+                else (
+                    model.objects.filter(purchase__business=demo_business).count()
+                    if hasattr(model, "purchase")
+                    else (
+                        model.objects.filter(sale__business=demo_business).count()
+                        if hasattr(model, "sale")
+                        else model.objects.count()
+                    )
+                )
             )
-        for event in AuditEvent.objects.filter(business=demo_business):
-            self.assertTrue(
-                DEMO_REFERENCE_START <= timezone.localtime(event.created_at, LAGOS).date() <= DEMO_REFERENCE_END
+            for model in tracked_models
+        }
+        total_counts_after = {
+            model.__name__: model.objects.count()
+            for model in tracked_models
+        }
+        self.assertEqual(canonical_counts_after, canonical_counts_before)
+        self.assertEqual(total_counts_after, total_counts_before)
+
+        # Verify all repaired timestamps match their exact canonical schedule
+        # Purchases
+        pur_001 = Purchase.objects.get(business=demo_business, reference="DEMO-PUR-001")
+        pur_002 = Purchase.objects.get(business=demo_business, reference="DEMO-PUR-002")
+        pur_void = Purchase.objects.get(business=demo_business, reference="DEMO-PUR-VOID")
+        self.assertEqual(pur_001.created_at, DEMO_TIMESTAMPS["purchase_001"])
+        self.assertEqual(pur_001.updated_at, DEMO_TIMESTAMPS["purchase_001"])
+        self.assertEqual(pur_002.created_at, DEMO_TIMESTAMPS["purchase_002"])
+        self.assertEqual(pur_002.updated_at, DEMO_TIMESTAMPS["purchase_002"])
+        self.assertEqual(pur_void.created_at, DEMO_TIMESTAMPS["purchase_void_created"])
+        self.assertEqual(pur_void.updated_at, DEMO_TIMESTAMPS["purchase_void_voided"])
+
+        # Sales
+        sal_001 = Sale.objects.get(business=demo_business, reference="DEMO-SAL-001")
+        sal_002 = Sale.objects.get(business=demo_business, reference="DEMO-SAL-002")
+        sal_void = Sale.objects.get(business=demo_business, reference="DEMO-SAL-VOID")
+        self.assertEqual(sal_001.created_at, DEMO_TIMESTAMPS["sale_001"])
+        self.assertEqual(sal_001.updated_at, DEMO_TIMESTAMPS["sale_001"])
+        self.assertEqual(sal_002.created_at, DEMO_TIMESTAMPS["sale_002"])
+        self.assertEqual(sal_002.updated_at, DEMO_TIMESTAMPS["sale_002"])
+        self.assertEqual(sal_void.created_at, DEMO_TIMESTAMPS["sale_void_created"])
+        self.assertEqual(sal_void.updated_at, DEMO_TIMESTAMPS["sale_void_voided"])
+
+        # Expenses
+        exp_orig = Expense.objects.get(
+            business=demo_business, description="Fictional August premises estimate"
+        )
+        exp_repl = Expense.objects.get(
+            business=demo_business, description="Fictional August premises correction"
+        )
+        self.assertEqual(exp_orig.created_at, DEMO_TIMESTAMPS["expense_original"])
+        self.assertEqual(exp_repl.created_at, DEMO_TIMESTAMPS["expense_replacement"])
+
+        # Stock Adjustments
+        for sku, expected_ts in DEMO_TIMESTAMPS["products"].items():
+            adj = StockAdjustment.objects.get(
+                business=demo_business, product__sku=sku, reason=StockAdjustment.Reason.OPENING
             )
+            self.assertEqual(adj.created_at, expected_ts["created"])
+        adj_found = StockAdjustment.objects.get(
+            business=demo_business, product__sku="DEMO-KOR-100", reason=StockAdjustment.Reason.FOUND
+        )
+        self.assertEqual(adj_found.created_at, DEMO_TIMESTAMPS["stock_adjustment_found"])
+
+        # Stock Movements (all 18)
+        for sku, expected_ts in DEMO_TIMESTAMPS["products"].items():
+            mov = StockMovement.objects.get(
+                business=demo_business,
+                stock_adjustment__product__sku=sku,
+                stock_adjustment__reason=StockAdjustment.Reason.OPENING,
+            )
+            self.assertEqual(mov.created_at, expected_ts["created"])
+        mov_found = StockMovement.objects.get(
+            business=demo_business,
+            stock_adjustment__product__sku="DEMO-KOR-100",
+            stock_adjustment__reason=StockAdjustment.Reason.FOUND,
+        )
+        self.assertEqual(mov_found.created_at, DEMO_TIMESTAMPS["stock_adjustment_found"])
+        for mov in StockMovement.objects.filter(business=demo_business, purchase_line__purchase__reference="DEMO-PUR-001"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["purchase_001"])
+        for mov in StockMovement.objects.filter(business=demo_business, purchase_line__purchase__reference="DEMO-PUR-002"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["purchase_002"])
+        mov_pur_void = StockMovement.objects.get(business=demo_business, purchase_line__purchase__reference="DEMO-PUR-VOID")
+        self.assertEqual(mov_pur_void.created_at, DEMO_TIMESTAMPS["purchase_void_created"])
+        mov_pur_rev = StockMovement.objects.get(
+            business=demo_business,
+            kind=StockMovement.Kind.REVERSAL,
+            reversal_of__purchase_line__purchase__reference="DEMO-PUR-VOID",
+        )
+        self.assertEqual(mov_pur_rev.created_at, DEMO_TIMESTAMPS["purchase_void_voided"])
+        for mov in StockMovement.objects.filter(business=demo_business, sale_line__sale__reference="DEMO-SAL-001"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["sale_001"])
+        for mov in StockMovement.objects.filter(business=demo_business, sale_line__sale__reference="DEMO-SAL-002"):
+            self.assertEqual(mov.created_at, DEMO_TIMESTAMPS["sale_002"])
+        mov_sal_void = StockMovement.objects.get(business=demo_business, sale_line__sale__reference="DEMO-SAL-VOID")
+        self.assertEqual(mov_sal_void.created_at, DEMO_TIMESTAMPS["sale_void_created"])
+        mov_sal_rev = StockMovement.objects.get(
+            business=demo_business,
+            kind=StockMovement.Kind.REVERSAL,
+            reversal_of__sale_line__sale__reference="DEMO-SAL-VOID",
+        )
+        self.assertEqual(mov_sal_rev.created_at, DEMO_TIMESTAMPS["sale_void_voided"])
+
+        # Audit Events (all 19)
+        self.assertEqual(
+            AuditEvent.objects.get(business=demo_business, action="business.created").created_at,
+            DEMO_TIMESTAMPS["business_created"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(business=demo_business, action="membership.staff_added").created_at,
+            DEMO_TIMESTAMPS["staff_membership"],
+        )
+        for sku, expected_ts in DEMO_TIMESTAMPS["products"].items():
+            prod = Product.objects.get(business=demo_business, sku=sku)
+            self.assertEqual(
+                AuditEvent.objects.get(
+                    business=demo_business,
+                    action="product.created",
+                    object_identifier=str(prod.pk),
+                ).created_at,
+                expected_ts["created"],
+            )
+        self.assertEqual(
+            AuditEvent.objects.get(business=demo_business, action="product.deactivated").created_at,
+            DEMO_TIMESTAMPS["audit_deactivate_pap"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="purchase.completed", object_identifier=str(pur_001.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_001"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="purchase.completed", object_identifier=str(pur_002.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_002"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="purchase.completed", object_identifier=str(pur_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_void_created"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="purchase.voided", object_identifier=str(pur_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["purchase_void_voided"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="sale.completed", object_identifier=str(sal_001.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_001"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="sale.completed", object_identifier=str(sal_002.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_002"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="sale.completed", object_identifier=str(sal_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_void_created"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="sale.voided", object_identifier=str(sal_void.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["sale_void_voided"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="expense.recorded", object_identifier=str(exp_orig.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["expense_original"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="expense.corrected", object_identifier=str(exp_repl.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["expense_replacement"],
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                business=demo_business, action="stock.adjusted", object_identifier=str(adj_found.pk)
+            ).created_at,
+            DEMO_TIMESTAMPS["stock_adjustment_found"],
+        )
 
         # Demo credentials must be reset
         demo_staff.refresh_from_db()

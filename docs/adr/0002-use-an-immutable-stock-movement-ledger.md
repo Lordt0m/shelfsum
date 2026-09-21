@@ -15,3 +15,15 @@ Keep a current Stock on Hand value for efficient reads and create an immutable S
 - The current value can be reconciled with its history.
 - Purchase, Sale, adjustment, and reversal services must enforce atomic invariants.
 - The application stores more rows and requires deliberate reversal workflows.
+
+### Canonical Demo Seeding Exception
+
+The fictional Demo Business requires a fixed, historical demonstration period (August 2026) so that public evaluators can inspect coherent multi-week reports and CSV exports regardless of deployment date.
+
+During `seed_demo_business()`, runtime services generate movements via standard domain logic, after which `core.demo` normalizes their `created_at` timestamps to the canonical August 2026 schedule using a private helper.
+
+This exception:
+- Is strictly owned by the canonical Demo seeding contract (`core.demo`) and executes atomically within the seed transaction.
+- Scopes all updates explicitly to `business=business` for the named fictional Demo Business.
+- Is strictly prohibited from application views, public domain services, and non-demo records.
+- Does not weaken normal application Stock Movement immutability or runtime invariants (INV-02, INV-04), because standard mutation paths remain unchanged and non-demo records cannot be updated.
