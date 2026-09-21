@@ -14,8 +14,6 @@ from reports.movement import MovementReportFilters, build_movement_report
 
 CSV_HEADINGS = ("Sale date", "Sale reference / ID", "Customer", "Status", "Revenue", "Estimated COGS", "Estimated gross margin")
 
-_csv_text = safe_csv_text
-
 
 def _sales_report(request):
     filters = SalesReportFilters.from_query_params(request.GET)

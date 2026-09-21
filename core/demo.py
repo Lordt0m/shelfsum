@@ -6,7 +6,6 @@ stock, immutability, and audit invariants as normal business activity.
 """
 
 from collections import Counter
-from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -45,20 +44,6 @@ from core.demo_config import (
 class DemoSeedError(RuntimeError):
     """Raised when existing fictional demo state is not canonical."""
 
-
-@dataclass(frozen=True)
-class DemoCredential:
-    email: str
-    password: str
-    first_name: str
-    last_name: str
-    role: str
-
-
-DEMO_CREDENTIALS = (
-    DemoCredential(DEMO_OWNER_EMAIL, DEMO_OWNER_PASSWORD, "Adaeze", "Demo", Membership.Role.OWNER),
-    DemoCredential(DEMO_STAFF_EMAIL, DEMO_STAFF_PASSWORD, "Bayo", "Sample", Membership.Role.STAFF),
-)
 
 LAGOS = ZoneInfo("Africa/Lagos")
 
@@ -964,26 +949,17 @@ def _verify_canonical_dataset(*, business, owner, staff):
     if actual_events != expected_events:
         _fail("Audit Event attribution, affected-object identity, summary, or timestamp drifted")
 
-    def _in_august_2026(dt):
-        return dt is not None and DEMO_REFERENCE_START <= dt.astimezone(LAGOS).date() <= DEMO_REFERENCE_END
-
-    if not _in_august_2026(business.created_at) or not _in_august_2026(business.updated_at):
-        _fail("Business timestamps drifted outside August 2026")
     if business.created_at != DEMO_TIMESTAMPS["business_created"]:
         _fail("Business created_at drifted")
     if business.updated_at != DEMO_TIMESTAMPS["business_updated"]:
         _fail("Business updated_at drifted")
 
-    if not _in_august_2026(owner.date_joined) or not _in_august_2026(staff.date_joined):
-        _fail("Demo user date_joined drifted outside August 2026")
     if owner.date_joined != DEMO_TIMESTAMPS["owner_joined"]:
         _fail("Demo Owner date_joined drifted")
     if staff.date_joined != DEMO_TIMESTAMPS["staff_joined"]:
         _fail("Demo Staff Member date_joined drifted")
 
     for membership in memberships:
-        if not _in_august_2026(membership.created_at):
-            _fail(f"Membership {membership.pk} timestamp drifted outside August 2026")
         expected_membership_ts = (
             DEMO_TIMESTAMPS["owner_membership"]
             if membership.user_id == owner.pk
@@ -993,8 +969,6 @@ def _verify_canonical_dataset(*, business, owner, staff):
             _fail(f"Membership {membership.pk} timestamp drifted")
 
     for product in products:
-        if not _in_august_2026(product.created_at) or not _in_august_2026(product.updated_at):
-            _fail(f"Product {product.sku} timestamps drifted outside August 2026")
         expected_product_ts = DEMO_TIMESTAMPS["products"][product.sku]
         if (
             product.created_at != expected_product_ts["created"]
@@ -1008,8 +982,6 @@ def _verify_canonical_dataset(*, business, owner, staff):
         "DEMO-PUR-VOID": (DEMO_TIMESTAMPS["purchase_void_created"], DEMO_TIMESTAMPS["purchase_void_voided"]),
     }
     for purchase in purchases:
-        if not _in_august_2026(purchase.created_at) or not _in_august_2026(purchase.updated_at):
-            _fail(f"Purchase {purchase.reference} timestamps drifted outside August 2026")
         created_ts, updated_ts = expected_purchase_ts[purchase.reference]
         if purchase.created_at != created_ts or purchase.updated_at != updated_ts:
             _fail(f"Purchase {purchase.reference} timestamps drifted from canonical schedule")
@@ -1020,23 +992,16 @@ def _verify_canonical_dataset(*, business, owner, staff):
         "DEMO-SAL-VOID": (DEMO_TIMESTAMPS["sale_void_created"], DEMO_TIMESTAMPS["sale_void_voided"]),
     }
     for sale in sales:
-        if not _in_august_2026(sale.created_at) or not _in_august_2026(sale.updated_at):
-            _fail(f"Sale {sale.reference} timestamps drifted outside August 2026")
         created_ts, updated_ts = expected_sale_ts[sale.reference]
         if sale.created_at != created_ts or sale.updated_at != updated_ts:
             _fail(f"Sale {sale.reference} timestamps drifted from canonical schedule")
 
-    for expense in expenses:
-        if not _in_august_2026(expense.created_at):
-            _fail(f"Expense {expense.pk} timestamp drifted outside August 2026")
     if original.created_at != DEMO_TIMESTAMPS["expense_original"]:
         _fail("original Expense timestamp drifted from canonical schedule")
     if replacement.created_at != DEMO_TIMESTAMPS["expense_replacement"]:
         _fail("replacement Expense timestamp drifted from canonical schedule")
 
     for adjustment in adjustments:
-        if not _in_august_2026(adjustment.created_at):
-            _fail(f"StockAdjustment {adjustment.pk} timestamp drifted outside August 2026")
         expected_adj_ts = (
             DEMO_TIMESTAMPS["stock_adjustment_found"]
             if adjustment.reason == StockAdjustment.Reason.FOUND
@@ -1044,14 +1009,6 @@ def _verify_canonical_dataset(*, business, owner, staff):
         )
         if adjustment.created_at != expected_adj_ts:
             _fail(f"StockAdjustment {adjustment.pk} timestamp drifted from canonical schedule")
-
-    for movement in movements:
-        if not _in_august_2026(movement.created_at):
-            _fail(f"StockMovement {movement.pk} timestamp drifted outside August 2026")
-
-    for event in AuditEvent.objects.filter(business=business):
-        if not _in_august_2026(event.created_at):
-            _fail(f"AuditEvent {event.pk} timestamp drifted outside August 2026")
 
 
 @transaction.atomic
