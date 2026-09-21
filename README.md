@@ -1,5 +1,8 @@
 # ShelfSum
 
+[![CI](https://github.com/Lordt0m/shelfsum/actions/workflows/ci.yml/badge.svg)](https://github.com/Lordt0m/shelfsum/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/demo-shelfsum.onrender.com-176b4d)](https://shelfsum.onrender.com/)
+
 ShelfSum is a server-rendered Django application for a small-shop Owner and Staff Member team to record stock and daily Business activity without losing the history behind the numbers.
 
 It provides a Product catalogue, Purchases, Sales, Expenses, manual Stock Adjustments, explainable summaries, filtered reports, spreadsheet-safe CSV exports, and an append-only Audit Event browser. The application is designed as a focused operational record: it is not accounting software, and its profit figures are explicitly estimates derived from recorded activity.
@@ -18,12 +21,17 @@ The first release is aimed at one small Business with:
 
 The seeded Demo Business contains only fictional data. Both roles can inspect the dashboard, records, reports, CSV exports, Stock Movements, and Audit Events; server-side rules reject every attempted Demo write.
 
+- **Public demonstration URL:** [https://shelfsum.onrender.com/](https://shelfsum.onrender.com/)
 - Owner: `demo-owner@shelfsum.test` / `ShelfSumDemoOwner2026!`
 - Staff Member: `demo-staff@shelfsum.test` / `ShelfSumDemoStaff2026!`
 
 The Demo dashboard is fixed to August 2026 so its figures remain stable. Ordinary Businesses use the current calendar month in `Africa/Lagos`.
 
-A public URL will be added only after the reviewed release has completed PostgreSQL CI, deployment, persistence, and smoke verification.
+### Interface
+
+| Desktop Operational Dashboard | Mobile Movements Report |
+| :---: | :---: |
+| ![ShelfSum Desktop Dashboard](docs/screenshots/desktop-dashboard.png) | ![ShelfSum Mobile Movements Report](docs/screenshots/mobile-movements-report.png) |
 
 ## What the application demonstrates
 
@@ -167,7 +175,7 @@ The GitHub Actions workflow in [`.github/workflows/ci.yml`](.github/workflows/ci
 
 Tests cover request behavior, role permissions, cross-Business isolation, direct-service denial, invalid input, immutable history, stock reconciliation, replay protection, transaction rollback, report/export parity, time boundaries, Demo state fingerprints, and PostgreSQL concurrency.
 
-The workflow file is locally validated and independently reviewed. A CI status badge will be added only after the repository is published and this exact workflow passes on GitHub.
+The workflow file is validated on GitHub Actions against PostgreSQL 17, asserting zero test skips and passing deployment checks on every proposed change.
 
 ## Deployment
 
@@ -183,7 +191,7 @@ Production requires `SHELFSUM_ENV=production`, a strong environment-held `SECRET
 
 [`render.yaml`](render.yaml) defines the service, health check, build command, start command, and non-secret environment contract. [`build.sh`](build.sh) installs pinned dependencies, collects static files, migrates the database, and seeds the Demo Business. Production secrets and connection strings are not committed or printed in release logs; the fictional shared Demo credentials are public by design.
 
-The final deployment is accepted only after the published ref passes hosted PostgreSQL CI, clean migration and seeding, restart-persistence, role-based smoke tests, and mobile-layout review.
+The deployment has been verified end-to-end: hosted PostgreSQL CI, clean migration and deterministic August 2026 seeding, restart persistence, dual-role access verification, and 42/42 responsive layout checks across mobile, tablet, and desktop viewports.
 
 ## Trade-offs
 
@@ -207,7 +215,7 @@ The first release does not include payments, invoicing, payroll, tax accounting,
 - Quantities are whole numbers and Business currency/timezone are fixed to `NGN` and `Africa/Lagos`.
 - The free Render service may sleep while idle, so the first request after inactivity can be slower.
 - Shared Demo credentials are public by design and protect fictional read-only data only.
-- Public URL, CI badge, and screenshots remain evidence-gated until the reviewed release is live and smoke-tested.
+- Public URL, CI badge, screenshots, restart persistence, and responsive layouts across mobile, tablet, and desktop viewports are verified against the live Render deployment.
 
 ## Repository evidence
 

@@ -26,4 +26,4 @@ This exception:
 - Is strictly owned by the canonical Demo seeding contract (`core.demo`) and executes atomically within the seed transaction.
 - Scopes all updates explicitly to `business=business` for the named fictional Demo Business.
 - Is strictly prohibited from application views, public domain services, and non-demo records.
-- Does not weaken normal application Stock Movement immutability or runtime invariants (INV-02, INV-04), because standard mutation paths remain unchanged and non-demo records cannot be updated.
+- Does not weaken normal application Stock Movement immutability or runtime invariants (INV-02, INV-04), because normal application paths cannot update them and the private Demo normalization helper is explicitly scoped to the named Demo Business.

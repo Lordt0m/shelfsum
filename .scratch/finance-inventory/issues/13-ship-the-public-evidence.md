@@ -4,16 +4,16 @@
 
 **Blocked by:** 12: Deliver a stable demo and Audit Event browser.
 
-**Status:** in-progress
+**Status:** complete
 
 - [x] The phase begins by reviewing and updating `AGENTS.md` for final build, security, deployment, documentation, and explanation requirements.
 - [x] The complete release suite passes against PostgreSQL and the fast local suite remains documented separately.
 - [x] Continuous integration runs the appropriate automated checks on proposed changes.
 - [x] Production configuration uses environment-held secrets, HTTPS-safe settings, static-file handling, safe logs, and a working health check.
-- [ ] The application is deployed to a free Render web service connected to Neon PostgreSQL after current provider terms are rechecked.
-- [ ] Migrations, static collection, and deterministic demo seeding succeed from a clean deployment.
+- [x] The application is deployed to a free Render web service connected to Neon PostgreSQL after current provider terms are rechecked.
+- [x] Migrations, static collection, and deterministic demo seeding succeed from a clean deployment.
 - [x] Public documentation explains the problem, target users, live demo, setup, tests, architecture, data model, permissions, key workflows, trade-offs, explicit exclusions, deployment, and known limitations.
-- [ ] The live landing page, demo login, protected pages, major reports, and mobile layout pass a final smoke review.
+- [x] The live landing page, demo login, protected pages, major reports, and mobile layout pass a final smoke review.
 
 Private interview-defence work is coordinated outside this public repository and is not a release acceptance item here.
 
@@ -33,12 +33,18 @@ Private interview-defence work is coordinated outside this public repository and
   3. Extended `_verify_canonical_dataset` in `core/demo.py` and unit tests in `core/tests/test_demo_seed.py` to verify exact canonical timestamps for all 61 time-bearing records (Purchases, Sales, Expenses, Stock Adjustments, Stock Movements, and Audit Events) against the canonical manifest rather than checking only that they fall somewhere in August 2026.
   4. Hardened `test_rerun_seed_demo_repairs_drifted_timestamps_without_affecting_unrelated_business` to snapshot and prove that all canonical model counts remain unchanged across rerun, and assert that all corrupted Purchases, Sales, Expenses, Stock Adjustments, Stock Movements, and Audit Events are restored to their exact canonical timestamps while unrelated records remain untouched.
   Verification passed locally: 23 focused seed tests, system check, migration drift, complete 268-test SQLite suite (3 documented PostgreSQL skips), and git whitespace checks. Public [CI #8](https://github.com/Lordt0m/shelfsum/actions/runs/35558212483) succeeded in 1m 19s against PostgreSQL 17 across all release gates.
+- **2026-09-21 live release verification and evidence closure:** verified the live public deployment at `https://shelfsum.onrender.com/`. Health check `/health/` returns `{"status":"ok"}`. Dual-role authentication verified for Owner (`demo-owner@shelfsum.test`) and Staff Member (`demo-staff@shelfsum.test`). Canonical baseline captured: 5 Products (`DEMO-BLU-500`, `DEMO-KOR-100`, `DEMO-NIA-500`, `DEMO-PAP-090`, `DEMO-SUN-330`), 3 Purchases (`DEMO-PUR-001`, `DEMO-PUR-002`, `DEMO-PUR-VOID`), 3 Sales (`DEMO-SAL-001`, `DEMO-SAL-002`, `DEMO-SAL-VOID`), 2 Expenses (1 recorded, 1 voided/corrected), 6 Stock Adjustments (5 opening + 1 found), 18 August Stock Movements with net quantity change +87, 41 Audit Events, and stable August 2026 dashboard metrics (Revenue ₦25,800.00, COGS ₦17,850.00, Expenses ₦275,000.00, Estimated Profit -₦267,050.00, Current Stock Value ₦61,400.00, Low Stock 1). Restart persistence was verified against the live service: all 5 CSV exports (sales, purchases, expenses, stock position, and August movements) and record counts match baseline exactly. Headless Chrome CDP responsive testing across 3 viewports (390px mobile, 768px tablet, 1440px desktop) and 14 routes passed 42/42 checks with zero horizontal overflow, visible legible figures, reachable controls, and demo read-only messaging. Polished screenshots captured into `docs/screenshots/`. ADR 0002 wording was corrected to state that normal application paths cannot update movements and the private helper is explicitly scoped to the named Demo Business. `README.md` was updated with the live link, CI badge, screenshot showcase, and verified deployment status.
 
-### Ordered release slices
+## Completion record
 
-1. **Production configuration:** add testable environment parsing, PostgreSQL/SSL configuration, secret and host validation, HTTPS/proxy/CSRF security, WhiteNoise static handling, Gunicorn, a reproducible build/release script, and deployment metadata. Preserve SQLite and `runserver` as the default local loop. Fail closed in production and prove both development and production settings through public checks or subprocess tests.
-2. **PostgreSQL CI and release suite:** add a GitHub Actions workflow with Python 3.13 and PostgreSQL, install pinned dependencies, run checks, migration drift, the complete suite with zero skips, and collect static files. The workflow is evidence only after a real run on a published repository.
-3. **Public technical evidence:** rewrite the README around problem, users, live-demo contract, setup, test modes, architecture, data model, permissions, workflows, trade-offs, exclusions, deployment, and limitations. Add only diagrams or screenshots that materially clarify the system and only after the deployed surface exists.
-4. **External release and smoke:** publish the exact reviewed ref, provision Neon and Render through user-owned accounts, set secrets, migrate/collect/seed from clean state, verify restart persistence, run both Demo roles through landing, authentication, workflows, reports, Audit browser, health, and mobile layout, then perform fresh release review.
-
-- **Next safe action:** provision Neon and Render through the user's accounts, set production secrets, and deploy the reviewed public ref. Then verify clean migrate/seed, restart persistence, both Demo roles, major reports/CSV/Audit routes, health, and mobile layout. Add the live URL, badge, and screenshots only after those checks pass.
+- **Closure ref:** `87b12d2`
+- **Delivered behaviour:** verified public deployment at `https://shelfsum.onrender.com/`, restart persistence, responsive layouts at 390px/768px/1440px, polished screenshot evidence, and exact ADR 0002 wording alignment.
+- **Verification:**
+  - Health endpoint `/health/` returns HTTP 200 `{"status":"ok"}`.
+  - Baseline and post-restart audits identical across 5 products, 3 purchases, 3 sales, 2 expenses, 6 stock adjustments, 18 August stock movements (net change +87), 41 audit events, 5 CSV exports, and August 2026 dashboard metrics.
+  - Headless Chrome CDP responsive suite: 42/42 checks passed with 0 horizontal overflow across 14 routes at 390px, 768px, and 1440px.
+  - Local test suite: 268 tests pass (3 documented PostgreSQL skips), `python manage.py check`, and `git diff --check`.
+- **Review and repairs:** corrected ADR 0002 line 29 wording to specify that normal application paths cannot update movements and the private helper is explicitly scoped to the Demo Business. Updated `README.md` to reflect verified live deployment, public URL, CI badge, and screenshot showcase.
+- **Documentation and demo impact:** added polished desktop and mobile screenshots in `docs/screenshots/`; updated `README.md` with live URLs and screenshots; marked all Ticket 13 acceptance criteria complete.
+- **Remaining risks & limitations:** Render free tier spins down after 15 minutes of inactivity (cold start ~50s); demo data is fixed to August 2026 and read-only.
+- **Next dependency:** none. Ticket 13 completes the accepted ShelfSum MVP delivery plan.
