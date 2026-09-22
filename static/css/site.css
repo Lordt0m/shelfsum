@@ -603,7 +603,6 @@ footer p {
 
   nav {
     align-items: flex-start;
-    flex-wrap: wrap;
     gap: 16px;
   }
 
