@@ -4,7 +4,7 @@
 
 **Blocked by:** 12: Deliver a stable demo and Audit Event browser.
 
-**Status:** in-progress
+**Status:** complete
 
 - [x] The phase begins by reviewing and updating `AGENTS.md` for final build, security, deployment, documentation, and explanation requirements.
 - [x] The complete release suite passes against PostgreSQL and the fast local suite remains documented separately.
@@ -13,7 +13,7 @@
 - [x] The application is deployed to a free Render web service connected to Neon PostgreSQL after current provider terms are rechecked.
 - [x] Migrations, static collection, and deterministic demo seeding succeed from a clean deployment.
 - [x] Public documentation explains the problem, target users, live demo, setup, tests, architecture, data model, permissions, key workflows, trade-offs, explicit exclusions, deployment, and known limitations.
-- [ ] The live landing page, demo login, protected pages, major reports, and mobile layout pass a final smoke review.
+- [x] The live landing page, demo login, protected pages, major reports, and mobile layout pass a final smoke review.
 
 Private interview-defence work is coordinated outside this public repository and is not a release acceptance item here.
 
@@ -34,18 +34,29 @@ Private interview-defence work is coordinated outside this public repository and
   4. Hardened `test_rerun_seed_demo_repairs_drifted_timestamps_without_affecting_unrelated_business` to snapshot and prove that all canonical model counts remain unchanged across rerun, and assert that all corrupted Purchases, Sales, Expenses, Stock Adjustments, Stock Movements, and Audit Events are restored to their exact canonical timestamps while unrelated records remain untouched.
   Verification passed locally: 23 focused seed tests, system check, migration drift, complete 268-test SQLite suite (3 documented PostgreSQL skips), and git whitespace checks. Public [CI #8](https://github.com/Lordt0m/shelfsum/actions/runs/35558212483) succeeded in 1m 19s against PostgreSQL 17 across all release gates.
 - **2026-09-21 live release verification and evidence closure:** verified the live public deployment at `https://shelfsum.onrender.com/`. Health check `/health/` returns `{"status":"ok"}`. Dual-role authentication verified for Owner (`demo-owner@shelfsum.test`) and Staff Member (`demo-staff@shelfsum.test`). Canonical baseline captured: 5 Products (`DEMO-BLU-500`, `DEMO-KOR-100`, `DEMO-NIA-500`, `DEMO-PAP-090`, `DEMO-SUN-330`), 3 Purchases (`DEMO-PUR-001`, `DEMO-PUR-002`, `DEMO-PUR-VOID`), 3 Sales (`DEMO-SAL-001`, `DEMO-SAL-002`, `DEMO-SAL-VOID`), 2 Expenses (1 recorded, 1 voided/corrected), 6 Stock Adjustments (5 opening + 1 found), 18 August Stock Movements with net quantity change +87, 41 Audit Events, and stable August 2026 dashboard metrics (Revenue ₦25,800.00, COGS ₦17,850.00, Expenses ₦275,000.00, Estimated Profit -₦267,050.00, Current Stock Value ₦61,400.00, Low Stock 1). Restart persistence was verified against the live service: all 5 CSV exports (sales, purchases, expenses, stock position, and August movements) and record counts match baseline exactly. Polished screenshots captured into `docs/screenshots/`. ADR 0002 wording was corrected to state that normal application paths cannot update movements and the private helper is explicitly scoped to the named Demo Business.
-- **2026-09-21 ticket reopened for 768px navigation repair:** reopened Ticket 13 to resolve page-level horizontal overflow at 768px tablet viewport. When authenticated, `.site-header` contains 10 navigation links and brand in a single row without wrapping because base styles lacked `flex-wrap: wrap` and `@media (max-width: 720px)` excluded 768px. Repaired `static/css/site.css` by enabling `flex-wrap: wrap` and `gap: 12px 24px` on `.site-header` and `nav`, and adjusting the mobile/tablet media query breakpoint to `768px` so authenticated header and navigation wrap cleanly without overflow. Live redeployment, dual-role smoke testing across 390px, 768px, and 1440px, and independent review are underway.
+- **2026-09-21 ticket reopened for 768px navigation repair:** reopened Ticket 13 to resolve page-level horizontal overflow at 768px tablet viewport. When authenticated, `.site-header` contains 10 navigation links and brand in a single row without wrapping because base styles lacked `flex-wrap: wrap` and `@media (max-width: 720px)` excluded 768px. Repaired `static/css/site.css` in ref `e438ad0` by enabling `flex-wrap: wrap` and `gap: 12px 24px` on `.site-header` and `nav`, and adjusting the mobile/tablet media query breakpoint to `768px` so authenticated header and navigation wrap cleanly without overflow. CI Run #15 passed on GitHub Actions (`https://github.com/Lordt0m/shelfsum/actions/runs/35616658475`) and the repair was deployed live to Render.
+- **2026-09-22 live responsive layout verification & final Ticket 13 closure:** verified the deployed repair on the live public deployment at `https://shelfsum.onrender.com/` (serving hashed stylesheet `site.264214ea8ed2.css`). Headless Chrome CDP responsive audit with Google DNS-over-HTTPS verified 0 page-level horizontal overflow across Mobile (390px), Tablet (768px), and Desktop (1440px) viewports for both Demo roles:
+  - Demo Owner: 42/42 layout checks passed across 14 routes (landing `/`, sign-in `/auth/sign-in/`, dashboard `/business/`, products list `/products/`, product detail `/products/1/`, purchases list `/purchases/`, sales list `/sales/`, expenses list `/expenses/`, reports index `/reports/`, movements report `/reports/movements/?kind=all&date_from=2026-08-01&date_to=2026-08-31`, audit events `/audit-events/`, stock adjustments `/stock-adjustments/`, business settings `/business/settings/`, and staff members `/business/staff/`).
+  - Demo Staff Member: 30/30 layout checks passed across 10 accessible routes (dashboard, products list, product detail, purchases list, sales list, expenses list, reports index, movements report, audit events, and stock adjustments).
+  - 403 Forbidden verified for Staff Member on Owner-only routes (`/business/settings/` and `/business/staff/`).
+  - Total responsive checks: 72/72 passed with zero page-level horizontal overflow.
+  - Data integrity and canonical August 2026 dataset verified live in the DOM: 5 Products (4 active, 1 discontinued `DEMO-PAP-090`), 3 Purchases (`DEMO-PUR-001`, `DEMO-PUR-002`, `DEMO-PUR-VOID`), 3 Sales (`DEMO-SAL-001`, `DEMO-SAL-002`, `DEMO-SAL-VOID`), 2 Expenses, 6 Stock Adjustments, 18 August Stock Movements (net change +87), 19 Audit Events, and stable August 2026 dashboard figures (Revenue ₦25,800.00, COGS ₦17,850.00, Expenses ₦275,000.00, Estimated Profit -₦267,050.00, Current Stock Value ₦61,400.00, Low Stock 1).
+  - All 5 CSV exports verified via authenticated browser requests: `/reports/sales.csv?date_from=2026-08-01&date_to=2026-08-31` (3 lines), `/reports/purchases.csv?date_from=2026-08-01&date_to=2026-08-31` (3 lines), `/reports/expenses.csv?date_from=2026-08-01&date_to=2026-08-31` (2 lines), `/reports/stock-position.csv` (6 lines), and `/reports/movements.csv?kind=all&date_from=2026-08-01&date_to=2026-08-31` (19 lines).
+  - Polished screenshots updated in `docs/screenshots/` without browser chrome; `README.md` verified responsive claim updated; Ticket 13 marked complete.
 
 ## Completion record
 
-- **Closure ref:** `87b12d2`
-- **Delivered behaviour:** verified public deployment at `https://shelfsum.onrender.com/`, restart persistence, responsive layouts at 390px/768px/1440px, polished screenshot evidence, and exact ADR 0002 wording alignment.
+- **Closure ref:** `e438ad0`
+- **Delivered behaviour:** verified public deployment at `https://shelfsum.onrender.com/`, restart persistence, clean migrations, WhiteNoise static collection (`site.264214ea8ed2.css`), deterministic August 2026 demo seeding, dual-role access control, zero horizontal overflow across 390px, 768px, and 1440px viewports (72/72 checks passed), and updated showcase screenshots.
 - **Verification:**
   - Health endpoint `/health/` returns HTTP 200 `{"status":"ok"}`.
-  - Baseline and post-restart audits identical across 5 products, 3 purchases, 3 sales, 2 expenses, 6 stock adjustments, 18 August stock movements (net change +87), 41 audit events, 5 CSV exports, and August 2026 dashboard metrics.
-  - Headless Chrome CDP responsive suite: 42/42 checks passed with 0 horizontal overflow across 14 routes at 390px, 768px, and 1440px.
-  - Local test suite: 268 tests pass (3 documented PostgreSQL skips), `python manage.py check`, and `git diff --check`.
-- **Review and repairs:** corrected ADR 0002 line 29 wording to specify that normal application paths cannot update movements and the private helper is explicitly scoped to the Demo Business. Updated `README.md` to reflect verified live deployment, public URL, CI badge, and screenshot showcase.
-- **Documentation and demo impact:** added polished desktop and mobile screenshots in `docs/screenshots/`; updated `README.md` with live URLs and screenshots; marked all Ticket 13 acceptance criteria complete.
+  - Public CI Run #15 passed: `https://github.com/Lordt0m/shelfsum/actions/runs/35616658475`.
+  - Headless Chrome CDP responsive suite: 72/72 checks passed with 0 horizontal overflow across both Demo roles at 390px, 768px, and 1440px.
+  - Clean migrations, WhiteNoise static collection (`site.264214ea8ed2.css`), and deterministic seed outcomes verified.
+  - Restart persistence verified against the live Render deployment.
+  - Baseline and post-restart audits identical across 5 products, 3 purchases, 3 sales, 2 expenses, 6 stock adjustments, 18 August stock movements (net change +87), 19 audit events, 5 CSV exports, and August 2026 dashboard metrics.
+  - Local test suite: 268 tests pass (3 documented PostgreSQL skips), `python manage.py check` (0 issues), and `git diff --check`.
+- **Review and repairs:** resolved authenticated header wrapping at 768px breakpoint in `static/css/site.css` (ref `e438ad0`). Verified live deployment serving hashed `site.264214ea8ed2.css` with Google DoH CDP testing. Updated `README.md` and screenshots in `docs/screenshots/`.
+- **Documentation and demo impact:** updated mobile and desktop screenshots in `docs/screenshots/`; restored and expanded verified responsive claim in `README.md` (72/72 checks); marked all Ticket 13 acceptance criteria complete.
 - **Remaining risks & limitations:** Render free tier spins down after 15 minutes of inactivity (cold start ~50s); demo data is fixed to August 2026 and read-only.
 - **Next dependency:** none. Ticket 13 completes the accepted ShelfSum MVP delivery plan.

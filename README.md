@@ -191,7 +191,7 @@ Production requires `SHELFSUM_ENV=production`, a strong environment-held `SECRET
 
 [`render.yaml`](render.yaml) defines the service, health check, build command, start command, and non-secret environment contract. [`build.sh`](build.sh) installs pinned dependencies, collects static files, migrates the database, and seeds the Demo Business. Production secrets and connection strings are not committed or printed in release logs; the fictional shared Demo credentials are public by design.
 
-The deployment is verified against hosted PostgreSQL CI, clean migration and deterministic August 2026 seeding, restart persistence, and dual-role access verification, with live responsive layout repairs across mobile, tablet, and desktop viewports currently undergoing verification.
+The deployment is verified against hosted PostgreSQL CI, clean migration and deterministic August 2026 seeding, restart persistence, dual-role access verification, and live responsive smoke testing with zero page-level horizontal overflow across mobile (390px), tablet (768px), and desktop (1440px) viewports (72/72 checks passed).
 
 ## Trade-offs
 
