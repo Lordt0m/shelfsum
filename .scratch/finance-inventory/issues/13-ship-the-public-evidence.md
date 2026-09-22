@@ -4,7 +4,7 @@
 
 **Blocked by:** 12: Deliver a stable demo and Audit Event browser.
 
-**Status:** in_progress
+**Status:** complete
 
 - [x] The phase begins by reviewing and updating `AGENTS.md` for final build, security, deployment, documentation, and explanation requirements.
 - [x] The complete release suite passes against PostgreSQL and the fast local suite remains documented separately.
@@ -52,12 +52,13 @@ Private interview-defence work is coordinated outside this public repository and
 
 ## Completion record
 
-- **Closure ref:** `3d9644c` (deployed layout fix ref `e438ad0`)
+- **Closure ref:** `1ef8f61`
 - **Delivered behaviour:** verified public deployment at `https://shelfsum.onrender.com/`, restart persistence, clean migrations, WhiteNoise static collection (`site.264214ea8ed2.css`), deterministic August 2026 demo seeding, dual-role access control, zero horizontal overflow across 390px, 768px, and 1440px viewports (72/72 checks passed), and updated showcase screenshots.
 - **Verification:**
   - Health endpoint `/health/` returns HTTP 200 `{"status":"ok"}`.
   - Public CI Run #15 passed: `https://github.com/Lordt0m/shelfsum/actions/runs/35616658475` (ref `e438ad0`).
   - Public CI Run #16 passed: `https://github.com/Lordt0m/shelfsum/actions/runs/35687427729` (ref `3d9644c`).
+  - Public CI Run #17 passed: `https://github.com/Lordt0m/shelfsum/actions/runs/35762379479` (ref `1ef8f61`).
   - Headless Chrome CDP responsive suite: 72/72 checks passed with 0 horizontal overflow across both Demo roles at 390px, 768px, and 1440px.
   - Clean migrations, WhiteNoise static collection (`site.264214ea8ed2.css`), and deterministic seed outcomes verified.
   - Restart persistence verified against the live Render deployment.
