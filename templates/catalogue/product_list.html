@@ -1,30 +1,30 @@
 {% extends "base.html" %}
-
 {% block title %}Products — ShelfSum{% endblock %}
-
 {% block content %}
-  <section aria-labelledby="page-title">
-    <div class="page-heading">
-      <div><p class="eyebrow">Catalogue</p><h1 id="page-title">Products</h1></div>
-      <a class="button" href="{% url 'product_create' %}">Create Product</a>
-    </div>
-    <form class="filter-bar" method="get" role="search">
-      <label class="field"><span>Search</span><input type="search" name="q" value="{{ query }}" placeholder="Name or SKU"></label>
-      <label class="field"><span>Status</span><select name="status"><option value="active"{% if status == "active" %} selected{% endif %}>Active</option><option value="inactive"{% if status == "inactive" %} selected{% endif %}>Inactive</option><option value="all"{% if status == "all" %} selected{% endif %}>All</option></select></label>
-      <label class="field"><span>Stock</span><select name="stock"><option value="all"{% if stock == "all" %} selected{% endif %}>All stock</option><option value="low"{% if stock == "low" %} selected{% endif %}>Low stock</option></select></label>
-      <button class="button" type="submit">Apply filters</button>
+<section aria-labelledby="page-title">
+  <div class="page-heading"><div><h1 id="page-title">Products</h1><p>Find a product, check its stock, and record the next change.</p></div>{% if not request.business.is_demo %}<a class="button" href="{% url 'product_create' %}"><span aria-hidden="true">+</span> Add product</a>{% endif %}</div>
+  <div class="panel">
+    <form class="filter-bar product-filters" method="get" role="search" aria-label="Find products">
+      <div class="field search-field"><label for="product-search">Search products</label><input id="product-search" type="search" name="q" value="{{ query }}" placeholder="Search by name or SKU"></div>
+      <div class="field"><label for="product-status">Product status</label><select id="product-status" name="status"><option value="active"{% if status == "active" %} selected{% endif %}>Active</option><option value="inactive"{% if status == "inactive" %} selected{% endif %}>Inactive</option><option value="all"{% if status == "all" %} selected{% endif %}>All products</option></select></div>
+      <div class="field"><label for="stock-status">Stock status</label><select id="stock-status" name="stock"><option value="all"{% if stock == "all" %} selected{% endif %}>All stock</option><option value="low"{% if stock == "low" %} selected{% endif %}>Low stock (includes zero)</option><option value="out"{% if stock == "out" %} selected{% endif %}>Out of stock</option><option value="healthy"{% if stock == "healthy" %} selected{% endif %}>Above threshold</option></select></div>
+      <button class="button button-secondary" type="submit">Apply filters</button>
     </form>
+    {% if query or status != "active" or stock != "all" %}<p class="filter-summary">{{ page_obj.paginator.count }} matching product{{ page_obj.paginator.count|pluralize }} <a href="{% url 'product_list' %}">Clear filters</a></p>{% endif %}
     {% if products %}
-      <div class="record-list">
-        {% for product in products %}
-          <a href="{% url 'product_detail' product.pk %}">
-            <span><strong>{{ product.name }}</strong>{% if product.sku %}<small>{{ product.sku }}</small>{% endif %}</span>
-            <span>{{ product.stock_on_hand }} units{% if product.is_low_stock %}<small>Low stock</small>{% endif %}{% if not product.is_active %}<small>Inactive</small>{% endif %}</span>
-          </a>
-        {% endfor %}
-      </div>
+    <div class="table-scroll"><table class="data-table product-table"><caption class="sr-only">Products and current stock balances</caption><thead><tr><th scope="col">Product</th><th scope="col" class="numeric">Stock on Hand</th><th scope="col">Stock status</th><th scope="col" class="numeric">Selling price</th><th scope="col">Actions</th></tr></thead><tbody>
+    {% for product in products %}<tr>
+      <td class="product-identity"><a class="product-name" href="{% url 'product_detail' product.pk %}">{{ product.name }}</a><small>{{ product.sku|default:"No SKU" }}</small></td>
+      <td data-label="Stock on Hand" class="numeric"><strong class="quantity">{{ product.stock_on_hand }}</strong><span class="unit"> units</span><small>Low at {{ product.low_stock_threshold }} or below</small></td>
+      <td class="product-stock-status" data-label="Status">{% include "includes/stock_badge.html" %}</td>
+      <td data-label="Selling price" class="numeric">{{ request.business.currency }} {{ product.selling_price|floatformat:2 }}</td>
+      <td class="row-actions"><a href="{% url 'product_detail' product.pk %}" aria-label="View {{ product.name }}">View product</a>{% if product.is_active and not request.business.is_demo %}<a href="{% url 'adjustment_create' %}?product={{ product.pk }}" aria-label="Adjust stock for {{ product.name }}">Adjust stock</a>{% endif %}</td>
+    </tr>{% endfor %}
+    </tbody></table></div>
+    {% include "includes/pagination.html" with pagination_label="Products" %}
     {% else %}
-      <p class="empty-state">{% if stock == "low" %}No Products match the low-stock filter.{% elif query or status != "active" %}No Products match these filters.{% else %}No Products yet. Create the first Product to begin a traceable stock record.{% endif %}</p>
+    <div class="empty-state"><h2>{% if query or status != "active" or stock != "all" %}No matching products{% else %}Your shelves start here{% endif %}</h2><p>{% if stock == "low" %}No Products match the low-stock filter.{% elif query or status != "active" or stock != "all" %}No Products match these filters. Try another search or stock status.{% else %}No Products yet. Add your first product and its opening quantity to start a traceable stock record.{% endif %}</p>{% if query or status != "active" or stock != "all" %}<a class="button button-secondary" href="{% url 'product_list' %}">Clear filters</a>{% elif not request.business.is_demo %}<a class="button" href="{% url 'product_create' %}">Add product</a>{% endif %}</div>
     {% endif %}
-  </section>
+  </div>
+</section>
 {% endblock %}

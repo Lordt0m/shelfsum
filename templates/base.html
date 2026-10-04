@@ -7,37 +7,28 @@
   <meta name="description" content="ShelfSum keeps small-shop stock and daily Business activity clear.">
   <title>{% block title %}ShelfSum{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <script src="{% static 'js/workspace.js' %}" defer></script>
 </head>
-<body>
-  <header class="site-header">
-    <a class="brand" href="{% url 'landing' %}" aria-label="ShelfSum home">Shelf<span>Sum</span></a>
-    <nav aria-label="Account navigation">
-      {% if user.is_authenticated %}
-        <a href="{% url 'business_home' %}">Business home</a>
-        <a href="{% url 'audit_event_list' %}">Audit Events</a>
-        <a href="{% url 'product_list' %}">Products</a>
-        <a href="{% url 'purchase_list' %}">Purchases</a>
-        <a href="{% url 'sale_list' %}">Sales</a>
-        <a href="{% url 'reports_index' %}">Reports</a>
-        <a href="{% url 'expense_list' %}">Expenses</a>
-        <a href="{% url 'adjustment_list' %}">Stock adjustments</a>
-        <a href="{% url 'password_change' %}">Password</a>
-        <form class="nav-form" action="{% url 'sign_out' %}" method="post">
-          {% csrf_token %}
-          <button class="nav-link" type="submit">Sign out</button>
-        </form>
-      {% else %}
-        <a href="{% url 'sign_in' %}">Sign in</a>
-        <a href="{% url 'register' %}">Create account</a>
-      {% endif %}
-    </nav>
-  </header>
-  {% if messages %}
-    <div class="messages" aria-live="polite">
-      {% for message in messages %}<p>{{ message }}</p>{% endfor %}
-    </div>
+<body{% if user.is_authenticated %} class="workspace"{% else %} class="auth-page"{% endif %}>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  {% if user.is_authenticated %}
+    <aside class="sidebar" aria-label="ShelfSum workspace">
+      <a class="brand" href="{% url 'business_home' %}" aria-label="ShelfSum home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Shelf<span>Sum</span></a>
+      <p class="nav-caption">Your shop, in view</p>
+      {% include "includes/workspace_nav.html" %}
+      <div class="sidebar-foot"><span class="avatar" aria-hidden="true">{{ user.email|first|upper }}</span><div><strong>{{ request.membership.get_role_display|default:"Account" }}</strong><small>{{ user.email }}</small></div></div>
+    </aside>
+    <header class="site-header">
+      <div class="workspace-location"><span class="location-mark" aria-hidden="true"></span><strong>{{ request.business.name|default:"Your workspace" }}</strong>{% if request.business.is_demo %}<span class="badge badge-neutral">Read-only demo</span>{% endif %}</div>
+      <span class="header-role">{{ request.membership.get_role_display }}</span>
+    </header>
+    <details class="mobile-menu"><summary><span class="brand">Shelf<span>Sum</span></span><span>Menu</span></summary>{% include "includes/workspace_nav.html" %}</details>
+  {% else %}
+    <header class="site-header"><a class="brand" href="{% url 'landing' %}" aria-label="ShelfSum home">Shelf<span>Sum</span></a><nav aria-label="Account navigation"><a href="{% url 'sign_in' %}">Sign in</a><a href="{% url 'register' %}">Create account</a></nav></header>
   {% endif %}
-  <main class="app-main">
+  <main class="app-main" id="main-content">
+    {% if request.business.is_demo %}<p class="demo-notice"><strong>Read-only demo.</strong> These records are fictional. Explore stock, history and role permissions; shared data cannot be changed.</p>{% endif %}
+    {% if messages %}<div class="messages" aria-live="polite">{% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>
 </body>

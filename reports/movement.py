@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from catalogue.models import Product
 from inventory.models import StockMovement
+from inventory.history import movement_history_queryset
 from reports.filters import month_bounds_for_date, parse_inclusive_date_range
 
 
@@ -130,6 +131,30 @@ class MovementReportRow:
     movement: StockMovement
 
     @property
+    def balance(self):
+        return self.movement.ledger_balance
+
+    @property
+    def reason_label(self):
+        if self.movement.stock_adjustment_id:
+            return self.movement.stock_adjustment.get_reason_display()
+        if self.movement.reversal_of_id:
+            return "Document voided"
+        return self.kind_label
+
+    @property
+    def notes(self):
+        return self.movement.stock_adjustment.notes if self.movement.stock_adjustment_id else ""
+
+    @property
+    def original_url(self):
+        return reverse("product_detail", args=[self.movement.product_id]) + f"?movement={self.movement.reversal_of_id}#movement-{self.movement.reversal_of_id}"
+
+    @property
+    def reversal_url(self):
+        return reverse("product_detail", args=[self.movement.product_id]) + f"?movement={self.movement.reversal.pk}#movement-{self.movement.reversal.pk}"
+
+    @property
     def product(self):
         return self.movement.product
 
@@ -205,7 +230,7 @@ def build_movement_report(*, business, filters):
     if not filters.is_valid:
         return MovementReport(filters=filters, rows=(), net_change=0, products=products)
 
-    movements = StockMovement.objects.filter(business=business)
+    movements = movement_history_queryset(business=business)
     if filters.kind != "all":
         movements = movements.filter(kind=filters.kind)
     if filters.product_id:

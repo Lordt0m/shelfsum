@@ -12,7 +12,7 @@ class PurchaseForm(forms.ModelForm):
         model = Purchase
         fields = ("purchase_date", "supplier_name", "reference", "notes")
         widgets = {
-            "purchase_date": forms.DateInput(attrs={"type": "date"}),
+            "purchase_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
@@ -70,11 +70,13 @@ class BasePurchaseLineFormSet(BaseInlineFormSet):
     @property
     def total(self):
         if not self.is_bound:
+            if not self.instance.pk:
+                return Decimal("0")
             return sum(
                 (line.line_total for line in self.instance.lines.all()), Decimal("0")
             )
         return sum(
-            (getattr(form, "line_total", Decimal("0")) for form in self.forms),
+            (getattr(form, "line_total", Decimal("0")) for form in self.forms if not getattr(form, "cleaned_data", {}).get("DELETE")),
             Decimal("0"),
         )
 

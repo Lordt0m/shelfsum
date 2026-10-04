@@ -29,6 +29,12 @@ The Demo dashboard is fixed to August 2026 so its figures remain stable. Ordinar
 
 ### Interface
 
+The shop workspace leads with linked inventory summaries, low-stock priorities and recent Stock Movements. Products combine name/SKU search with active-state and stock-state filters, and retain those filters through pagination. Product details put the current balance beside essential details and a paginated movement history.
+
+Stock Adjustment previews show the current quantity, signed change and expected balance. With JavaScript enabled, changing an input invalidates the displayed confirmation; without JavaScript, request another server preview after editing. The existing service still locks and rechecks the Product when recording. Movement rows show recorded reasons, staff, signed changes and balances calculated from the complete ledger before filtering. Original movements and their reversals link to each other, including across history pages.
+
+Desktop tables become compact labelled records on phones. Shared controls, validation feedback and empty states use a consistent light surface and green accent. Demo screens identify their read-only state, and Owner navigation follows the existing role permissions. The redesign is recorded in [`.scratch/interface-redesign/`](.scratch/interface-redesign/); the screenshots below describe the previous live release until a separately verified deployment updates them.
+
 | Desktop Operational Dashboard | Mobile Movements Report |
 | :---: | :---: |
 | ![ShelfSum Desktop Dashboard](docs/screenshots/desktop-dashboard.png) | ![ShelfSum Mobile Movements Report](docs/screenshots/mobile-movements-report.png) |
@@ -209,6 +215,8 @@ The first release does not include payments, invoicing, payroll, tax accounting,
 
 ## Known limitations
 
+- The interface redesign has local SQLite and browser verification; PostgreSQL concurrency and production static/deployment checks remain release gates before publishing it.
+- Complete-ledger balance queries have not been benchmarked against large shop histories. Product history is paginated; the existing movement report still presents all matching rows.
 - Estimated Profit is an operational estimate, not accounting, tax, or cash profit.
 - Current stock value uses the Product's current unit-cost estimate; it does not reconstruct historical inventory value.
 - One user can belong to only one Business in the first release.

@@ -1,4 +1,8 @@
+from urllib.parse import urlencode
+
+from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.db.models import F, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -7,6 +11,8 @@ from businesses.access import membership_required
 from catalogue.forms import ProductCreationForm, ProductUpdateForm
 from catalogue.models import Product
 from catalogue.services import create_product, deactivate_product, update_product
+from inventory.history import movement_history_date_params, movement_history_queryset
+from reports.movement import MovementReportRow
 
 
 @membership_required
@@ -24,23 +30,42 @@ def product_list(request):
         products = products.filter(is_active=True)
     if stock == "low":
         products = products.filter(stock_on_hand__lte=F("low_stock_threshold"))
+    elif stock == "out":
+        products = products.filter(stock_on_hand=0)
+    elif stock == "healthy":
+        products = products.filter(stock_on_hand__gt=F("low_stock_threshold"))
     else:
         stock = "all"
+    page_obj = Paginator(products, 25).get_page(request.GET.get("page"))
     return render(
         request,
         "catalogue/product_list.html",
-        {"products": products, "query": query, "status": status, "stock": stock},
+        {"products": page_obj.object_list, "page_obj": page_obj, "query": query,
+         "status": status, "stock": stock,
+         "filter_query": urlencode({"q": query, "status": status, "stock": stock})},
     )
 
 
 @membership_required
 def product_detail(request, product_id):
     product = get_object_or_404(
-        Product.objects.prefetch_related("stock_movements__stock_adjustment"),
+        Product.objects.all(),
         pk=product_id,
         business=request.business,
     )
-    return render(request, "catalogue/product_detail.html", {"product": product})
+    history = movement_history_queryset(business=request.business).filter(product=product)
+    page_number = request.GET.get("page")
+    # Reversal links can target an original outside the first history page.
+    target_id = request.GET.get("movement", "")
+    if target_id.isascii() and target_id.isdecimal() and len(target_id) <= 18:
+        target = history.filter(pk=int(target_id)).first()
+        if target:
+            position = history.filter(Q(created_at__gt=target.created_at) | Q(created_at=target.created_at, pk__gt=target.pk)).count()
+            page_number = position // 25 + 1
+    page_obj = Paginator(history, 25).get_page(page_number)
+    movements = tuple(MovementReportRow(movement=row) for row in page_obj.object_list)
+    history_query = urlencode({"product": product.pk, **movement_history_date_params(history)})
+    return render(request, "catalogue/product_detail.html", {"product": product, "movements": movements, "page_obj": page_obj, "history_query": history_query})
 
 
 @membership_required
@@ -61,14 +86,15 @@ def product_create(request):
         except ValidationError as error:
             form.add_error(None, error)
         else:
+            messages.success(request, "Product added. Opening stock is recorded in its movement history.")
             return redirect("product_detail", product_id=product.pk)
     return render(
         request,
         "catalogue/product_form.html",
         {
             "form": form,
-            "page_title": "Create Product",
-            "submit_label": "Create Product",
+            "page_title": "Add product",
+            "submit_label": "Add product",
             "intro": "Opening quantity is recorded as a traceable Stock Adjustment. Stock on Hand cannot be edited directly.",
         },
     )
@@ -93,6 +119,7 @@ def product_edit(request, product_id):
         except ValidationError as error:
             form.add_error(None, error)
         else:
+            messages.success(request, "Product details updated.")
             return redirect("product_detail", product_id=product.pk)
     return render(
         request,
@@ -112,4 +139,5 @@ def product_deactivate(request, product_id):
     if request.method != "POST":
         return redirect("product_detail", product_id=product.pk)
     deactivate_product(business=request.business, actor=request.user, product=product)
+    messages.success(request, "Product deactivated. Its stock and history are preserved.")
     return redirect("product_detail", product_id=product.pk)

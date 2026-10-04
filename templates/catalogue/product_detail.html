@@ -1,34 +1,17 @@
 {% extends "base.html" %}
-
 {% block title %}{{ product.name }} — ShelfSum{% endblock %}
-
 {% block content %}
-  <section aria-labelledby="page-title">
-    <p class="eyebrow">{% if product.sku %}{{ product.sku }}{% else %}Product{% endif %}</p>
-    <h1 id="page-title">{{ product.name }}</h1>
-    <div class="detail-actions">
-      <a class="button" href="{% url 'product_edit' product.pk %}">Edit Product</a>
-      {% if product.is_active %}<form method="post" action="{% url 'product_deactivate' product.pk %}">{% csrf_token %}<button class="button button-muted" type="submit">Deactivate Product</button></form>{% else %}<span class="status">Inactive</span>{% endif %}
-    </div>
-    {% if product.description %}<p class="form-intro">{{ product.description }}</p>{% endif %}
-    <dl class="business-facts product-facts">
-      <div><dt>Stock on Hand</dt><dd>{{ product.stock_on_hand }} units</dd></div>
-      <div><dt>Selling price</dt><dd>NGN {{ product.selling_price }}</dd></div>
-      <div><dt>Unit-cost estimate</dt><dd>NGN {{ product.unit_cost }}</dd></div>
-      <div><dt>Low-stock threshold</dt><dd>{{ product.low_stock_threshold }} units</dd></div>
-    </dl>
-    <h2>Movement history</h2>
-    {% if product.stock_movements.all %}
-      <div class="record-list">
-        {% for movement in product.stock_movements.all %}
-          <div class="record-row">
-            <span><strong>{{ movement.stock_adjustment.get_reason_display|default:movement.get_kind_display }}</strong><small>{{ movement.created_at|date:"j M Y, H:i" }}</small></span>
-            <span>{% if movement.quantity_change > 0 %}+{% endif %}{{ movement.quantity_change }} units</span>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="empty-state">No Stock Movements yet. Stock on Hand began at zero.</p>
-    {% endif %}
+<section aria-labelledby="page-title">
+  <a class="back-link" href="{% url 'product_list' %}">Back to products</a>
+  <div class="page-heading"><div><h1 id="page-title">{{ product.name }}</h1><p>{{ product.sku|default:"No SKU" }}</p></div><div class="detail-actions">{% if not request.business.is_demo %}{% if product.is_active %}<a class="button" href="{% url 'adjustment_create' %}?product={{ product.pk }}">Adjust stock</a>{% endif %}<a class="button button-secondary" href="{% url 'product_edit' product.pk %}">Edit product</a>{% endif %}</div></div>
+  <div class="product-overview">
+    <section class="panel stock-panel" aria-labelledby="balance-title"><h2 id="balance-title">Stock on Hand</h2><p class="stock-balance" aria-label="{{ product.stock_on_hand }} units">{{ product.stock_on_hand }} <span>units</span></p>{% include "includes/stock_badge.html" %}<p>Low-stock threshold: {{ product.low_stock_threshold }} units</p>{% if not product.is_active %}<p>This product is inactive. Its stock and movement history are preserved.</p>{% elif product.is_low_stock %}<p>Review this balance before the next sale or purchase.</p>{% endif %}</section>
+    <section class="panel" aria-labelledby="details-title"><h2 id="details-title">Product details</h2><dl class="detail-grid"><div><dt>Selling price</dt><dd>{{ request.business.currency }} {{ product.selling_price|floatformat:2 }}</dd></div><div><dt>Unit-cost estimate</dt><dd>{{ request.business.currency }} {{ product.unit_cost|floatformat:2 }}</dd></div><div><dt>Product status</dt><dd>{% if product.is_active %}Active{% else %}Inactive{% endif %}</dd></div><div><dt>SKU</dt><dd>{{ product.sku|default:"No SKU" }}</dd></div></dl>{% if product.description %}<p class="product-description">{{ product.description|linebreaksbr }}</p>{% endif %}</section>
+  </div>
+  <section class="panel history-panel" aria-labelledby="history-title"><div class="section-heading"><h2 id="history-title">Movement history</h2><a href="{% url 'reports_movements' %}?{{ history_query }}">Filter history</a></div><p class="section-note">Balance after each change is calculated from the full movement history, in recorded order. Times are Africa/Lagos.</p>
+    {% include "includes/movement_table.html" with rows=movements hide_product=True %}
+    {% include "includes/pagination.html" with pagination_label="Movement history" %}
   </section>
+  {% if product.is_active and not request.business.is_demo %}<details class="deactivation"><summary>Deactivate product</summary><p>Remove this product from active lists and stock actions. Stock and history remain available.</p><form method="post" action="{% url 'product_deactivate' product.pk %}">{% csrf_token %}<button class="button button-secondary" type="submit">Deactivate Product</button></form></details>{% endif %}
+</section>
 {% endblock %}

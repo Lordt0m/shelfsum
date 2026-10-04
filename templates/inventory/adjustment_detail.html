@@ -1,3 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Stock Adjustment {{ adjustment.pk }} | ShelfSum{% endblock %}
-{% block content %}<h1>Stock Adjustment {{ adjustment.pk }}</h1><dl><dt>Product</dt><dd><a href="{% url 'product_detail' adjustment.product.pk %}">{{ adjustment.product.name }}</a></dd><dt>Change</dt><dd>{{ adjustment.quantity_change }}</dd><dt>Reason</dt><dd>{{ adjustment.get_reason_display }}</dd><dt>Notes</dt><dd>{{ adjustment.notes|default:"-" }}</dd><dt>Recorded</dt><dd>{{ adjustment.created_at }}</dd></dl><p>Stock on Hand is now {{ adjustment.product.stock_on_hand }}.</p>{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'adjustment_list' %}">← Stock adjustments</a>
+<section class="page-heading"><div><p class="eyebrow">Recorded stock change</p><h1>Stock Adjustment {{ adjustment.pk }}</h1><p>{{ adjustment.created_at|date:"j M Y · H:i" }} · Africa/Lagos</p></div><a class="button secondary" href="{% url 'product_detail' adjustment.product.pk %}">View product history</a></section>
+<section class="panel"><dl class="detail-grid"><div><dt>Product</dt><dd><a href="{% url 'product_detail' adjustment.product.pk %}">{{ adjustment.product.name }}</a></dd></div><div><dt>Quantity change</dt><dd>{% if adjustment.quantity_change > 0 %}+{% endif %}{{ adjustment.quantity_change }} units</dd></div><div><dt>Reason</dt><dd>{{ adjustment.get_reason_display }}</dd></div><div><dt>Notes</dt><dd>{{ adjustment.notes|default:"No notes added." }}</dd></div></dl><p>Stock on Hand is now {{ adjustment.product.stock_on_hand }}. This is the current balance, including any later movements.</p><p class="help-text">Recorded adjustments cannot be edited. Record a new correction if needed.</p></section>
+{% endblock %}

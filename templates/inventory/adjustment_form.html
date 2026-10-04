@@ -1,3 +1,27 @@
 {% extends "base.html" %}
 {% block title %}{{ page_title }} | ShelfSum{% endblock %}
-{% block content %}<h1>{{ page_title }}</h1><p>Use a signed whole number. Opening stock is recorded when creating a Product.</p><form method="post">{% csrf_token %}{{ form.as_p }}{% if preview is not None %}<p aria-live="polite">Resulting Stock on Hand: <strong>{{ preview }}</strong></p>{% endif %}<button type="submit" name="action" value="preview">Preview resulting Stock on Hand</button> <button type="submit" name="action" value="record">Record Stock Adjustment</button></form>{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'adjustment_list' %}">← Stock adjustments</a>
+<section class="form-shell" aria-labelledby="page-title">
+  <p class="eyebrow">Inventory</p><h1 id="page-title">{{ page_title }}</h1>
+  <p class="form-intro">Use an adjustment for damage, missing stock, found stock or a correction. Opening stock is recorded when creating a Product.</p>
+  <form method="post" id="adjustment-form" novalidate>{% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <div class="live-estimate" id="stock-estimate" aria-live="polite"{% if current_stock is None %} hidden{% endif %}>
+      <p>Current Stock on Hand: <strong id="current-stock">{{ current_stock|default_if_none:"—" }}</strong> units</p>
+      <p id="estimated-balance-line" hidden>Estimated new balance: <strong id="estimated-stock"></strong> units. Preview to check before recording.</p>
+    </div>
+    <div class="form-actions"><button class="button secondary" type="submit" name="action" value="preview"{% if request.business.is_demo %} disabled{% endif %}>Preview adjustment</button><a href="{% url 'product_list' %}">Cancel</a></div>
+    {% if preview is not None %}
+    <section class="preview-panel" id="confirmed-preview" aria-labelledby="preview-title">
+      <h2 id="preview-title">Review this adjustment</h2>
+      <dl class="preview-balances"><div><dt>Current Stock on Hand</dt><dd>{{ current_stock }}</dd></div><div><dt>Quantity change</dt><dd>{% if form.cleaned_data.quantity_change > 0 %}+{% endif %}{{ form.cleaned_data.quantity_change }}</dd></div><div><dt>Expected new balance</dt><dd>{{ preview }}</dd></div></dl>
+      <p>Resulting Stock on Hand: <strong>{{ preview }}</strong></p>
+      <p>No stock has changed yet. The balance is checked again when you record.</p>
+      <button class="button" type="submit" name="action" value="record"{% if request.business.is_demo %} disabled{% endif %}>Confirm and record adjustment</button>
+    </section>
+    {% endif %}
+  </form>
+</section>
+{{ stock_choices|json_script:"stock-choices" }}
+{% endblock %}

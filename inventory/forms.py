@@ -8,7 +8,7 @@ class StockAdjustmentForm(forms.ModelForm):
     class Meta:
         model = StockAdjustment
         fields = ["product", "quantity_change", "reason", "notes"]
-        widgets = {"quantity_change": forms.NumberInput(attrs={"step": "1"})}
+        widgets = {"quantity_change": forms.NumberInput(attrs={"step": "1"}), "notes": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, business, **kwargs):
         super().__init__(*args, **kwargs)
@@ -17,6 +17,8 @@ class StockAdjustmentForm(forms.ModelForm):
             (value, label) for value, label in StockAdjustment.Reason.choices
             if value != StockAdjustment.Reason.OPENING
         ]
+        self.fields["quantity_change"].help_text = "Use a whole number: +5 adds five units; -2 removes two units."
+        self.fields["notes"].help_text = "Optional. Add details that will help your team understand this change."
 
     def clean_quantity_change(self):
         value = self.cleaned_data["quantity_change"]

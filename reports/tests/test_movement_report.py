@@ -28,6 +28,10 @@ LAGOS = ZoneInfo("Africa/Lagos")
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class MovementReportRequestTests(TestCase):
     def setUp(self):
+        # Fixtures use September 2026; default-month requests must not depend on today's date.
+        clock = patch("django.utils.timezone.now", return_value=datetime(2026, 9, 15, 12, tzinfo=datetime_timezone.utc))
+        clock.start()
+        self.addCleanup(clock.stop)
         user_model = get_user_model()
         self.owner = user_model.objects.create_user(
             email="owner@example.com", password="password"
@@ -316,6 +320,8 @@ class MovementReportRequestTests(TestCase):
         directory = self.client.get(reverse("reports_index"))
         report = self.client.get(reverse("reports_movements"))
         self.assertContains(directory, "Product movements")
-        self.assertContains(report, "<caption>Stock Movements matching the selected filters</caption>")
-        for heading in ("Lagos timestamp", "Product", "SKU", "Kind", "Quantity change", "Origin"):
+        self.assertContains(report, "Stock Movements matching the selected filters")
+        for heading in ("Date &amp; time", "Product", "Reason / source", "Staff member"):
             self.assertContains(report, f'<th scope="col">{heading}</th>')
+        for heading in ("Change", "Balance after"):
+            self.assertContains(report, f'<th scope="col" class="numeric">{heading}</th>')

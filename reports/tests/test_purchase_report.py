@@ -18,6 +18,10 @@ from purchases.services import complete_purchase, void_purchase
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class PurchaseReportRequestTests(TestCase):
     def setUp(self):
+        # Fixtures use September 2026; default-month requests must not depend on today's date.
+        clock = patch("django.utils.timezone.now", return_value=datetime(2026, 9, 15, 12, tzinfo=datetime_timezone.utc))
+        clock.start()
+        self.addCleanup(clock.stop)
         self.owner = get_user_model().objects.create_user(
             email="owner@example.com", password="password"
         )

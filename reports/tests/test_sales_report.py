@@ -19,6 +19,10 @@ from sales.services import void_sale
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class SalesReportRequestTests(TestCase):
     def setUp(self):
+        # Fixtures use September 2026; default-month requests must not depend on today's date.
+        clock = patch("django.utils.timezone.now", return_value=datetime(2026, 9, 15, 12, tzinfo=datetime_timezone.utc))
+        clock.start()
+        self.addCleanup(clock.stop)
         self.owner = get_user_model().objects.create_user(
             email="owner@example.com", password="password"
         )
@@ -79,7 +83,7 @@ class SalesReportRequestTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f'<a href="{reverse("reports_index")}">Reports</a>',
+            f'<a href="{reverse("reports_index")}" aria-current="page">Reports</a>',
             html=True,
         )
         self.assertContains(response, f"Sale #{first.pk}")

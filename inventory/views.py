@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.dateparse import parse_date
@@ -58,7 +59,12 @@ def adjustment_detail(request, adjustment_id):
 
 @membership_required
 def adjustment_create(request):
-    form = StockAdjustmentForm(request.POST or None, business=request.business)
+    initial = {}
+    if request.method == "GET":
+        product_id = request.GET.get("product", "")
+        if product_id.isascii() and product_id.isdecimal() and len(product_id) <= 18 and Product.objects.available_for_stock_activity(business=request.business).filter(pk=int(product_id)).exists():
+            initial["product"] = int(product_id)
+    form = StockAdjustmentForm(request.POST or None, initial=initial, business=request.business)
     preview = None
     if form.is_valid():
         product = form.cleaned_data["product"]
@@ -72,7 +78,17 @@ def adjustment_create(request):
             except ValidationError as error:
                 form.add_error(None, error)
             else:
+                messages.success(request, "Stock Adjustment recorded. Stock on Hand and movement history are updated.")
                 return redirect("adjustment_detail", adjustment_id=adjustment.pk)
+    stock_choices = list(form.fields["product"].queryset.values("id", "stock_on_hand"))
+    selected_id = str(form["product"].value() or "")
+    current_stock = next((item["stock_on_hand"] for item in stock_choices if str(item["id"]) == selected_id), None)
+    if preview is not None:
+        current_stock = form.cleaned_data["product"].stock_on_hand
+        for item in stock_choices:
+            if str(item["id"]) == selected_id:
+                item["stock_on_hand"] = current_stock
     return render(request, "inventory/adjustment_form.html", {
         "form": form, "preview": preview, "page_title": "Record Stock Adjustment",
+        "stock_choices": stock_choices, "current_stock": current_stock,
     })

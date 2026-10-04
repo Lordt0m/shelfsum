@@ -1,6 +1,7 @@
 from calendar import monthrange
 from datetime import date
 from decimal import Decimal
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from django.db.models import DecimalField, ExpressionWrapper, F, Sum
@@ -12,6 +13,8 @@ from catalogue.models import Product
 from expenses.models import Expense
 from sales.models import Sale, SaleLine
 from core.demo_config import DEMO_REFERENCE_END, DEMO_REFERENCE_START
+from inventory.history import movement_history_date_params, movement_history_queryset
+from reports.movement import MovementReportRow
 
 
 LAGOS = ZoneInfo("Africa/Lagos")
@@ -99,6 +102,8 @@ def dashboard_context(*, business, reference_date=None):
         ).order_by("name", "pk")
     ]
     dates = f"date_from={period_start.isoformat()}&date_to={period_end.isoformat()}"
+    history = movement_history_queryset(business=business)
+    movement_dates = urlencode(movement_history_date_params(history))
     return {
         "dashboard": {
             "period_start": period_start,
@@ -110,6 +115,11 @@ def dashboard_context(*, business, reference_date=None):
             "stock_value": stock_value,
             "stock_breakdown": stock_breakdown,
             "low_stock_count": low_stock.count(),
+            "low_stock_products": list(low_stock.order_by("stock_on_hand", "name", "pk")[:5]),
+            "active_product_count": Product.objects.filter(business=business, is_active=True).count(),
+            "out_of_stock_count": Product.objects.filter(business=business, is_active=True, stock_on_hand=0).count(),
+            "recent_movements": tuple(MovementReportRow(movement=row) for row in history[:5]),
+            "movements_url": f'{reverse("reports_movements")}?{movement_dates}',
             "recent_activity": recent_activity,
             "sales_url": f'{reverse("sale_list")}?status=completed&{dates}',
             "expenses_url": f'{reverse("expense_list")}?status=recorded&{dates}',

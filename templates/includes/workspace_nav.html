@@ -1,0 +1,22 @@
+{% with route=request.resolver_match.url_name %}
+<nav aria-label="Account navigation">
+  <a href="{% url 'business_home' %}"{% if route == 'business_home' %} aria-current="page"{% endif %}>Overview</a>
+  <a href="{% url 'product_list' %}"{% if route == 'product_list' or route == 'product_detail' or route == 'product_edit' or route == 'product_create' %} aria-current="page"{% endif %}>Products</a>
+  <a href="{% url 'adjustment_list' %}"{% if route == 'adjustment_list' or route == 'adjustment_create' or route == 'adjustment_detail' %} aria-current="page"{% endif %}>Stock adjustments</a>
+  <a href="{% url 'reports_movements' %}"{% if route == 'reports_movements' %} aria-current="page"{% endif %}>Movement history</a>
+  <span class="nav-divider" aria-hidden="true"></span>
+  <a href="{% url 'purchase_list' %}"{% if 'purchase' in route and 'reports' not in route %} aria-current="page"{% endif %}>Purchases</a>
+  <a href="{% url 'sale_list' %}"{% if 'sale' in route and 'reports' not in route %} aria-current="page"{% endif %}>Sales</a>
+  <a href="{% url 'expense_list' %}"{% if 'expense' in route and 'reports' not in route %} aria-current="page"{% endif %}>Expenses</a>
+  <a href="{% url 'reports_index' %}"{% if 'reports' in route and route != 'reports_movements' %} aria-current="page"{% endif %}>Reports</a>
+  <a href="{% url 'audit_event_list' %}"{% if route == 'audit_event_list' %} aria-current="page"{% endif %}>Audit Events</a>
+  {% if request.membership.role == "owner" %}
+    <span class="nav-divider" aria-hidden="true"></span>
+    <a href="{% url 'staff_member_list' %}"{% if 'staff_member' in route %} aria-current="page"{% endif %}>Staff Members</a>
+    <a href="{% url 'business_settings' %}"{% if route == 'business_settings' %} aria-current="page"{% endif %}>Business settings</a>
+  {% endif %}
+  <span class="nav-divider" aria-hidden="true"></span>
+  <a href="{% url 'password_change' %}">Password</a>
+  <form class="nav-form" action="{% url 'sign_out' %}" method="post">{% csrf_token %}<button class="nav-link" type="submit">Sign out</button></form>
+</nav>
+{% endwith %}

@@ -43,3 +43,5 @@ Expenses are owned by `expenses`; recording and explicit void-and-replace correc
 Draft Purchase and Sale edits use their owning `save_draft_purchase` and `save_draft_sale` services. Editing, completion, and voiding acquire the parent document before ordered lines and recheck lifecycle state after locking.
 
 Update this file only when ownership, a public seam, or an invariant changes. Implementation detail that does not affect callers belongs in code and tests.
+
+Product history, dashboard activity and movement reports share the read-only `inventory.history.movement_history_queryset(business=...)` presentation seam. It scopes the complete ledger to the explicit Business, calculates each balance using stable timestamp/ID ordering before callers apply display filters, and loads persisted actor/origin/reversal relationships. `movement_history_date_params(queryset)` supplies recorded Lagos-local date bounds for history links. Neither helper changes Stock on Hand or movement records. Request tests in `core/tests/test_interface.py` cover filtered balances, timestamp ties, cross-page reversal navigation, malformed selectors and Business isolation.
