@@ -1,9 +1,20 @@
 # Improve the shop workspace
 
-Status: in-progress
+Status: complete
 
 Implement the interface-redesign specification as one coherent vertical slice. Preserve all existing mutation services, permissions and report/CSV semantics. Add regression coverage at the request boundary for filters/pagination, ledger-derived history and non-mutating previews, and verify responsive layouts in the browser.
 
 ## Comments
 
 Started from clean main c546e3a in isolated codex/interface-redesign worktree. The employability research clone is not the source of this change. The supplied references and frontend-design guidance drive the token system, functional hierarchy and responsive treatment.
+
+## Completion record
+
+- Implementation ref: local commit d8c069c on codex/interface-redesign; not pushed or deployed. This closure record is committed separately so it can identify the exact implementation. The original main checkout remains unchanged.
+- Delivered: consistent responsive shell/components; Products search, status filters and pagination; balance-led product details; current/change/new adjustment preview; complete-ledger history balances, reasons, actors and cross-page reversal links; linked inventory dashboard priorities. IF-05/10/11/16 gain presentation behavior and the shared read-only inventory.history seam. INV-01 through INV-06 and all mutation services/schema remain unchanged.
+- Red/green: new request tests initially reproduced missing filters/history/preview behavior, and a later test reproduced the existing unsaved Purchase/Sale form crash. Focused workflow checks passed (22 tests after final form repairs). Final `manage.py test --noinput`: 281 tests in 270.285s, OK with three explicit PostgreSQL-only skips under SQLite. `manage.py check`: zero issues. `manage.py makemigrations --check --dry-run`: no changes. `git diff --check` and staged diff check passed.
+- Browser: isolated local database, 1440/768/390/320 px inspection. Verified product creation/validation, SKU search, stock filters and empty state; nonnegative preview rejection, no-write preview, input invalidation and confirmation; Purchase/Sale drafts, completion and void; original/reversal navigation; Demo read-only state and Staff navigation. Test stock reconciled 10 -> 9 -> 12 -> 9 -> 7 -> 9. Checked priority layouts have no page-level horizontal overflow. Screenshots saved outside the repository as review evidence, not as claims about the live release.
+- Independent fresh-context review: fixed malformed Unicode/oversized selector handling and server draft totals including deleted lines; subsequent review found no remaining concrete implementation findings. Browser repairs also corrected shared-form error IDs, form-total JavaScript scoping, native ISO date values, new-form totals and old-history link dates. Final documentation clarification limits preview invalidation to JavaScript enhancement; no-JavaScript users request another server preview after edits.
+- Documentation/demo impact: README and module map explain the read-only seam and local release status; repository-wide guidance did not need changes. Canonical fictional Demo seed and production data are unchanged. Local workflow records remain in an ignored isolated SQLite database. Report CSV definitions remain unchanged. Four existing report test fixtures use a fixed September clock so they remain deterministic in later months.
+- Open gates: PostgreSQL row-lock/concurrency suite and production static/deployment validation before release. Complete-ledger query performance on large histories is unmeasured; the existing movement report remains unpaginated. No real assistive-technology session was run. Reopen for a failing release check, balance mismatch, isolation regression or verified layout defect.
+- Next dependency: no further implementation ticket is required for local acceptance. If release is requested, first run the existing PostgreSQL CI/release workflow against this branch, then validate static assets and deployment before updating live screenshots or making a release claim.
