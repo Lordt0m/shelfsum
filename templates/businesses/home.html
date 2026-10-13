@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ business.name }} — ShelfSum{% endblock %}
 {% block content %}
-<section class="page-heading"><div><p class="eyebrow">{{ membership.get_role_display }} workspace</p><h1>Overview</h1><p>Your stock today, and the changes behind it.</p></div>{% if not business.is_demo %}<a class="button" href="{% url 'product_create' %}">Add product</a>{% endif %}</section>
+<section class="shop-overview" aria-labelledby="overview-title">
+<div class="page-heading"><div><h1 id="overview-title">Your shop, at a glance.</h1><p>Your stock today, and the changes behind it.</p></div>{% if not business.is_demo %}<a class="button button-secondary" href="{% url 'product_create' %}">Add product</a>{% endif %}</div>
 {% if not business.is_demo %}<nav class="quick-actions" aria-label="Daily tasks"><a class="button" href="{% url 'sale_create' %}">Record a sale</a><a class="button button-secondary" href="{% url 'purchase_create' %}">Receive a purchase</a><a class="button button-secondary" href="{% url 'expense_create' %}">Record an expense</a></nav>{% endif %}
 <section class="metrics" aria-label="Inventory summary">
-<a class="metric" href="{% url 'product_list' %}?status=active"><span class="metric-label">Active products</span><strong>{{ dashboard.active_product_count }}</strong><small>Browse products →</small></a>
-<a class="metric" href="{{ dashboard.low_stock_url }}"><span class="metric-label">Low stock</span><strong>{{ dashboard.low_stock_count }}</strong><small>At or below threshold · includes zero →</small></a>
-<a class="metric" href="{% url 'product_list' %}?status=active&amp;stock=out"><span class="metric-label">Out of stock</span><strong>{{ dashboard.out_of_stock_count }}</strong><small>Zero units available →</small></a>
+<a class="metric" href="{% url 'product_list' %}?status=active"><span class="metric-label">Active products</span><strong>{{ dashboard.active_product_count }}</strong><small>Browse your catalogue</small></a>
+<a class="metric metric-warning" href="{{ dashboard.low_stock_url }}"><span class="metric-label">Low stock</span><strong>{{ dashboard.low_stock_count }}</strong><small>At or below threshold, including zero</small></a>
+<a class="metric metric-danger" href="{% url 'product_list' %}?status=active&amp;stock=out"><span class="metric-label">Out of stock</span><strong>{{ dashboard.out_of_stock_count }}</strong><small>Zero units available</small></a>
+</section>
 </section>
 <div class="dashboard-columns">
 <section class="panel" aria-labelledby="attention-title"><div class="section-heading"><div><p class="eyebrow">Stock priorities</p><h2 id="attention-title">Needs attention</h2></div><a href="{{ dashboard.low_stock_url }}">View all</a></div>

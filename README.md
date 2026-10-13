@@ -74,6 +74,8 @@ Core forms are usable without JavaScript. JavaScript is progressive enhancement,
 
 The enhancement source is `frontend/workspace.ts`; `npm run build` compiles it with strict TypeScript into `static/js/workspace.js`. Build before running Django or collecting static files, and rebuild after editing TypeScript. The emitted file is a build artifact, not source. TypeScript adds instant Product rows, focuses linked server errors, invalidates stale stock previews and shows submission progress while preserving each submitter's name/value. Money, stock balances and authorization remain entirely server-side. Unsaved totals are hidden after line edits and recalculated when saving a draft. No inline client-side money or stock calculations remain.
 
+The local interface uses warm paper surfaces, forest-green navigation, a lime shop-sign overview and labelled stock states. Locally available Trebuchet MS display lettering and Segoe/system body text avoid external font dependencies. Shared components carry the same identity through Products, Purchases, Sales, Expenses, adjustments, movement history and reports. Frequent actions remain immediate, with reduced-motion support and visible keyboard focus. This local design pass is not yet a hosted release.
+
 Purchases, Sales and Expenses share labelled filters and responsive record tables. Draft, completed, reversed and correction-linked records explain their lifecycle. Demo screens hide write actions; server-side Demo protection remains unchanged. Keyboard and repeated actions have no movement animation. Reduced motion disables transitions. Release automation builds enhancements before static collection; the hosted build and PostgreSQL concurrency suite still require separate release verification.
 
 ## Architecture

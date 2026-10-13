@@ -1,12 +1,16 @@
 :root {
   color-scheme: light;
-  --ink: #18252b;
-  --muted: #52616b;
-  --paper: #f5f7f9;
-  --surface: #ffffff;
-  --accent: #176b4d;
-  --accent-dark: #0e4934;
-  --line: #dbe2e7;
+  --ink: #203b30;
+  --muted: #58685d;
+  --paper: #f7f6ed;
+  --surface: #fffefa;
+  --accent: #287456;
+  --accent-dark: #174b39;
+  --line: #e1e2d4;
+  --lime: #e0edac;
+  --honey: #f1bd61;
+  --soft-green: #edf3df;
+  --display-font: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
   --warm: #d8a23e;
 }
 
@@ -979,4 +983,123 @@ footer p {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .workspace *, .workspace *::before, .workspace *::after { animation: none !important; transition: none !important; }
+}
+
+/* Shop-sign identity. Stock states remain labels, never invented charts.
+   All repeated actions are immediate; surface elevation uses the shared recipe. */
+.workspace h1, .workspace h2, .auth-page h1, .auth-page h2 {
+  font-family: var(--display-font); font-weight: 700; letter-spacing: -0.045em;
+}
+.workspace h1, .auth-page h1 { font-size: clamp(2rem, 3.4vw, 2.75rem); line-height: 1.12; }
+.workspace h2 { font-size: 1.4rem; line-height: 1.2; }
+.workspace .page-heading { margin-bottom: 28px; }
+.workspace .page-heading p { max-width: 62ch; }
+.sidebar { background: var(--accent-dark); border: 0; color: var(--surface); }
+.workspace .sidebar .brand { color: var(--surface); font-family: var(--display-font); font-size: 1.6rem; }
+.sidebar .brand span:not(.brand-mark) { color: var(--lime); }
+.sidebar .brand-mark i { background: var(--lime); }
+.sidebar .brand-mark { border-color: var(--lime); }
+.sidebar .nav-caption, .sidebar-foot small { color: #cfdecd; }
+.sidebar nav a, .sidebar .nav-link { color: #e4eadf; border-radius: 10px; }
+.sidebar nav a:hover, .sidebar .nav-link:hover { background: #235a45; color: var(--surface); }
+.sidebar nav a[aria-current] { background: var(--lime); color: var(--accent-dark); box-shadow: none; }
+.sidebar .nav-divider, .sidebar-foot { border-color: #3e6853; }
+.sidebar .nav-divider, .mobile-menu .nav-divider { background: #3e6853; }
+.sidebar .avatar { background: var(--lime); color: var(--accent-dark); }
+.sidebar :focus-visible { outline-color: var(--honey); }
+.workspace .site-header { background: var(--paper); }
+.header-role { color: var(--accent-dark); font-weight: 600; }
+.mobile-menu { background: var(--accent-dark); color: var(--surface); border: 0; }
+.mobile-menu summary .brand, .mobile-menu summary > span:last-child { color: var(--surface); }
+.mobile-menu summary .brand span { color: var(--lime); }
+.mobile-menu nav a, .mobile-menu .nav-link { color: #e4eadf; }
+.mobile-menu nav a:hover, .mobile-menu .nav-link:hover { background: #235a45; color: var(--surface); }
+.mobile-menu nav a[aria-current] { background: var(--lime); color: var(--accent-dark); box-shadow: none; }
+.mobile-menu :focus-visible { outline-color: var(--honey); }
+.workspace .panel, .workspace .form-shell, .auth-page .form-shell { border-radius: 18px; }
+.workspace :is(.button, button:not(.nav-link)), .auth-page .button { border-radius: 10px; }
+.workspace :is(input:not([type="checkbox"]):not([type="hidden"]), select, textarea) { border-radius: 10px; border-color: #7e917e; }
+.workspace :is(input, select, textarea):focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.workspace .field-invalid :is(input, select, textarea), .workspace [aria-invalid="true"] { border-color: var(--danger); }
+.workspace .form-shell > h1 { margin-top: 0; }
+.workspace .form-intro { color: var(--muted); }
+.workspace .document-line { background: var(--paper); border: 1px solid var(--line); border-radius: 26px; padding: 16px; margin: 24px 0; }
+.workspace .document-line legend { background: var(--surface); color: var(--accent-dark); padding: 2px 10px; }
+.document-total { font-size: 1.2rem; color: var(--accent-dark); }
+.workspace .data-table th, .workspace .report-table th { background: #f0f1e4; color: var(--ink); }
+.workspace .data-table th[scope="row"] { background: transparent; }
+@media (hover: hover) and (pointer: fine) {
+  .workspace .data-table tbody tr:hover, .workspace .report-table tbody tr:hover { background: var(--soft-green); }
+}
+.workspace .data-table, .workspace .report-table { background: transparent; }
+.badge { border-radius: 7px; padding: 5px 9px; font-weight: 650; }
+.badge::before { width: 8px; height: 8px; border-radius: 2px; }
+.badge-good { background: #e0ecd6; color: #245536; }
+.badge-warning { background: #fbe7b9; color: #744813; }
+.badge-danger { background: #f7ded9; color: #922f29; }
+.badge-neutral { background: #e9ebe2; color: #52604f; }
+.badge-danger::before { border-radius: 50%; }
+.badge-warning::before { width: 3px; border-radius: 1px; }
+.shop-overview { position: relative; background: var(--lime); color: var(--accent-dark); padding: 38px 30px 26px; border-radius: 24px; overflow: hidden; margin-bottom: 28px; }
+.shop-overview::before { content: ""; position: absolute; inset: 0 0 auto; height: 9px; background: repeating-linear-gradient(90deg, var(--accent-dark) 0 32px, var(--lime) 32px 64px); }
+.workspace .shop-overview h1 { font-size: clamp(2.2rem, 4vw, 3.3rem); max-width: 15ch; }
+.workspace .shop-overview .page-heading p { color: var(--accent-dark); }
+.shop-overview .quick-actions { margin: 0 0 28px; }
+.workspace .shop-overview .button-secondary { background: var(--surface); }
+.shop-overview .metrics { gap: 0; margin: 0; }
+.workspace .shop-overview .metric { border: 0; border-top: 1px solid #aebd87; box-shadow: none; border-radius: 0; background: transparent; padding: 20px 20px 0 0; color: var(--accent-dark); }
+.shop-overview .metric:not(:first-child) { border-left: 1px solid #aebd87; padding-left: 24px; }
+.shop-overview .metric-label { font-weight: 600; color: var(--accent-dark); }
+.shop-overview .metric strong { font-family: var(--display-font); font-size: 2.6rem; line-height: 1; margin: 10px 0; }
+.shop-overview .metric small { color: #405a33; line-height: 1.4; }
+.shop-overview .metric-warning .metric-label::before, .shop-overview .metric-danger .metric-label::before { content: ""; display: inline-block; width: 9px; height: 9px; background: #744813; margin-right: 7px; border-radius: 2px; }
+.shop-overview .metric-danger .metric-label::before { background: #922f29; border-radius: 50%; }
+.workspace .dashboard-columns { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 24px; }
+.section-heading { gap: 16px; }
+.attention-list li { padding: 20px 0; align-items: flex-start; }
+.attention-list .product-name { font-size: 1.05rem; }
+.movement-amount .change { display: inline-block; min-width: 44px; padding: 4px 8px; border-radius: 8px; background: var(--soft-green); font-weight: 700; }
+.movement-amount .change-out { background: #f9e8d1; color: #744813; }
+.workspace .stock-panel { background: var(--accent-dark); color: var(--surface); }
+.workspace .stock-panel h2, .workspace .stock-panel .stock-balance { color: var(--surface); }
+.stock-panel .stock-balance { font-family: var(--display-font); font-size: 4rem; letter-spacing: -0.06em; }
+.stock-panel .stock-balance span, .stock-panel > p:not(.stock-balance) { color: #d5e2d1; }
+.stock-panel .badge { box-shadow: none; }
+.workspace .report-totals article { border: 0; box-shadow: var(--shadow-border); background: var(--surface); border-radius: 14px; }
+.workspace .report-totals p { color: var(--accent-dark); font-family: var(--display-font); font-weight: 700; }
+.workspace .report-nav { gap: 6px; }
+.workspace .report-nav a { padding: 8px 12px; border-radius: 10px; color: var(--muted); }
+.workspace .report-nav a[aria-current] { background: var(--soft-green); color: var(--accent-dark); text-decoration: none; box-shadow: inset 0 -2px var(--accent); }
+.workspace .report-directory { border-radius: 18px; }
+.workspace .report-table-wrap { border-radius: 14px; box-shadow: var(--shadow-border); }
+.workspace .financial-summary .dashboard-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; }
+.workspace .financial-summary .dashboard-grid article { grid-column: span 2; }
+.workspace .financial-summary .dashboard-grid article:nth-child(n+4) { grid-column: span 3; }
+.workspace .financial-summary .dashboard-grid article:nth-child(4) { border-top: 3px solid var(--accent); }
+.workspace .dashboard-value { font-family: var(--display-font); font-size: 1.7rem; color: var(--accent-dark); }
+.workspace .messages { border-radius: 12px; background: var(--soft-green); }
+.workspace .state-notice, .workspace .preview-panel { background: var(--soft-green); border-radius: 12px; }
+.workspace .empty-state { background: var(--paper); border-radius: 12px; margin: 8px 0; }
+.workspace .demo-notice { background: #fbe7b9; color: #68471b; border-color: #dfc181; border-radius: 12px; }
+.workspace .form-errors, .workspace .form-error { border-radius: 12px; }
+.workspace :is(.button, button):focus-visible { transition: none; }
+@media (max-width: 1199px) {
+  .workspace .dashboard-columns { grid-template-columns: 1fr; }
+}
+@media (max-width: 639px) {
+  .shop-overview { padding: 30px 20px 20px; border-radius: 20px; }
+  .workspace .shop-overview .page-heading { gap: 18px; }
+  .workspace .shop-overview h1 { font-size: 2.35rem; }
+  .shop-overview .page-heading > .button { align-self: flex-start; }
+  .shop-overview .quick-actions { gap: 8px; margin-bottom: 20px; }
+  .shop-overview .metrics { grid-template-columns: 1fr; }
+  .workspace .shop-overview .metric, .shop-overview .metric:not(:first-child) { border-left: 0; padding: 16px 0; }
+  .shop-overview .metric strong { font-size: 2.25rem; margin: 0 0 0 12px; }
+  .workspace .financial-summary .dashboard-grid { grid-template-columns: 1fr; gap: 16px; }
+  .workspace .financial-summary .dashboard-grid article, .workspace .financial-summary .dashboard-grid article:nth-child(n+4) { grid-column: auto; }
+  .workspace .document-line { border-radius: 16px; padding: 16px; }
+  .workspace :is(input:not([type="checkbox"]):not([type="hidden"]), select, textarea) { font-size: 16px; }
+  .attention-list li { flex-wrap: wrap; gap: 12px; }
+  .workspace .report-nav { gap: 4px; }
+  .workspace .report-nav a { padding-inline: 8px; }
 }
