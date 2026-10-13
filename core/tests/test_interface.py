@@ -178,8 +178,15 @@ class InterfaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="error-summary"')
         self.assertContains(response, 'href="#id_amount"')
-        self.assertContains(response, 'id="id_amount_error"')
+        self.assertContains(response, 'id="id_amount_error"', count=1)
+        self.assertContains(response, 'aria-describedby="id_amount_error"')
         self.assertContains(response, "Delivery")
+
+    def test_invalid_business_settings_has_one_error_description_target(self):
+        response = self.client.post(reverse("business_settings"), {"name": "", "phone_number": "", "address": ""})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_name_error"', count=1)
+        self.assertContains(response, 'aria-describedby="id_name_error"')
 
     def test_expense_correction_preserves_date_in_native_date_input(self):
         from datetime import date

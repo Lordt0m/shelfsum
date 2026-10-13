@@ -14,7 +14,7 @@
         <div class="field{% if field.errors %} field-invalid{% endif %}">
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field }}
-          {% if field.errors %}<div class="field-errors" id="{{ field.auto_id }}_error">{{ field.errors }}</div>{% endif %}
+          {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
         </div>
       {% endfor %}
       <button class="button" type="submit"{% if request.business.is_demo %} disabled{% endif %}>Save settings</button>
