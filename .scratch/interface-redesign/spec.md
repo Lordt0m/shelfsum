@@ -45,3 +45,9 @@ Checked 4 October 2026:
 - https://ui.shadcn.com/examples/dashboard — spacing, rail navigation, restrained summary surfaces, table controls and pagination.
 
 Deployment is outside this request. PostgreSQL remains a release gate before publishing.
+
+## Complete-workflow extension, 13 October 2026
+
+Ticket 03 extends the same visual system through Purchases, Sales, Expenses, report filters and reversal confirmations. Apply better-ui's exact surface shadows and consistent outline icons; use emil-design-eng's immediate keyboard/repeated actions, clear feedback and restrained motion. No new motion is needed for frequent operations. Strict TypeScript enhances native Django forms only. Keep money/stock calculations and write authorization on the server. Include linked error summaries, preserved inputs, native add-line fallback, submit progress, empty states, disabled Demo actions and immutable/reversal explanations. Build generated JavaScript before static collection; keep it out of source control.
+
+Local acceptance includes writable Owner/Staff and read-only Demo checks, phone/tablet/desktop layouts, keyboard input, reduced motion, JavaScript-free purchase and adjustment workflows, report/CSV agreement, focused regressions and the existing suite. This extension does not change the previously deployed site.

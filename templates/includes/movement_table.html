@@ -1,7 +1,7 @@
 {% load tz %}
 {% localtime off %}
 {% if rows %}
-<div class="table-scroll"><table class="data-table movement-table"><caption class="sr-only">Stock changes, reasons, staff and resulting balances</caption><thead><tr><th scope="col">Date &amp; time</th>{% if not hide_product %}<th scope="col">Product</th>{% endif %}<th scope="col">Reason / source</th><th scope="col" class="numeric">Change</th><th scope="col" class="numeric">Balance after</th><th scope="col">Staff member</th></tr></thead><tbody>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Records table"><table class="data-table movement-table"><caption class="sr-only">Stock changes, reasons, staff and resulting balances</caption><thead><tr><th scope="col">Date &amp; time</th>{% if not hide_product %}<th scope="col">Product</th>{% endif %}<th scope="col">Reason / source</th><th scope="col" class="numeric">Change</th><th scope="col" class="numeric">Balance after</th><th scope="col">Staff member</th></tr></thead><tbody>
 {% for row in rows %}<tr id="movement-{{ row.movement.pk }}">
   <td data-label="Date"><span class="sr-only">{{ row.lagos_timestamp_display }}</span><time datetime="{{ row.movement.created_at|date:'c' }}">{{ row.lagos_timestamp|date:"j M Y" }}</time><small>{{ row.lagos_timestamp|date:"H:i" }} <span class="movement-id">#{{ row.movement.pk }}</span></small></td>
   {% if not hide_product %}<td class="movement-product" data-label="Product"><a class="product-name" href="{% url 'product_detail' row.product.pk %}">{{ row.product.name }}</a><small>{{ row.sku }}</small></td>{% endif %}

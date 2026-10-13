@@ -1,3 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Sales | ShelfSum{% endblock %}
-{% block content %}<section class="page-heading"><p class="eyebrow">Sales</p><h1>Sales history</h1><a class="button" href="{% url 'sale_create' %}">New Sale</a></section><form method="get" class="filter-form"><label for="status">Status</label><select id="status" name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select><label>From <input type="date" name="date_from" value="{{ date_from }}"></label><label>To <input type="date" name="date_to" value="{{ date_to }}"></label><button type="submit">Filter</button></form>{% if filter_error %}<p class="form-error">{{ filter_error }}</p>{% endif %}{% for sale in sales %}<article class="list-row"><a href="{% url 'sale_detail' sale.pk %}">Sale #{{ sale.pk }}</a><span>{{ sale.sale_date }}</span><span>{{ sale.get_status_display }}</span><span>{{ sale.total }}</span></article>{% empty %}<p>No Sales match these filters.</p>{% endfor %}{% endblock %}
+{% block title %}Sales — ShelfSum{% endblock %}
+{% block content %}
+<section class="page-heading"><div><h1>Sales history</h1><p>Stock changes only when a sale is completed.</p></div>{% if not request.business.is_demo %}<a class="button" href="{% url 'sale_create' %}">New Sale</a>{% endif %}</section>
+<section class="panel">
+{% include "includes/document_filters.html" %}
+{% if sales %}<div class="table-scroll"><table class="data-table responsive-table"><caption class="sr-only">Sales for this Business</caption><thead><tr><th scope="col">Sale</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col" class="numeric">Total</th></tr></thead><tbody>
+{% for sale in sales %}<tr><th scope="row"><a class="product-name" href="{% url 'sale_detail' sale.pk %}">Sale #{{ sale.pk }}</a><small>{{ sale.customer_name|default:"No customer added" }}</small></th><td data-label="Date">{{ sale.sale_date|date:"j M Y" }}</td><td data-label="Status"><span class="badge {% if sale.status == 'completed' %}badge-good{% elif sale.status == 'voided' %}badge-neutral{% else %}badge-warning{% endif %}">{{ sale.get_status_display }}</span></td><td data-label="Total" class="numeric">{{ request.business.currency }} {{ sale.total|floatformat:2 }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<div class="empty-state"><h2>No sales to show</h2><p>No Sales match these filters.</p>{% if status or date_from or date_to %}<a href="{% url 'sale_list' %}">Clear filters</a>{% elif not request.business.is_demo %}<a class="button" href="{% url 'sale_create' %}">Record your first sale</a>{% endif %}</div>{% endif %}
+</section>
+{% endblock %}

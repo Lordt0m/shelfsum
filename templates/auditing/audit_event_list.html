@@ -9,6 +9,6 @@
   <div class="field"><label for="date_to">To</label><input id="date_to" type="date" name="date_to" value="{{ browser.filters.date_to_value }}"></div>
   <button class="button" type="submit">Filter</button>
 </form>
-{% for error in browser.filters.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-{% if browser.filters.is_valid %}{% if browser.rows %}<div class="report-table-wrap"><table class="report-table"><caption>Audit Events matching the selected filters</caption><thead><tr><th scope="col">Lagos timestamp</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Summary</th></tr></thead><tbody>{% for row in browser.rows %}<tr><td>{{ row.lagos_timestamp_display }}</td><td>{{ row.event.actor.email }}</td><td>{{ row.event.action }}</td><td>{{ row.event.summary }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="empty-state">No Audit Events match these filters.</p>{% endif %}{% endif %}
+{% for error in browser.filters.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
+{% if browser.filters.is_valid %}{% if browser.rows %}<div class="report-table-wrap" tabindex="0" role="region" aria-label="Report table, scroll horizontally for more columns"><table class="report-table"><caption>Audit Events matching the selected filters</caption><thead><tr><th scope="col">Lagos timestamp</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Summary</th></tr></thead><tbody>{% for row in browser.rows %}<tr><td>{{ row.lagos_timestamp_display }}</td><td>{{ row.event.actor.email }}</td><td>{{ row.event.action }}</td><td>{{ row.event.summary }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="empty-state">No Audit Events match these filters.</p>{% endif %}{% endif %}
 {% endblock %}

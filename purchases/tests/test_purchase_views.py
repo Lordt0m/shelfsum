@@ -120,7 +120,7 @@ class PurchaseViewTests(TestCase):
         self.assertRedirects(complete, reverse("purchase_detail", args=[purchase.pk]))
         detail = self.client.get(complete.url)
         self.assertContains(detail, "Completed")
-        self.assertContains(detail, "Total: 1365.00")
+        self.assertContains(detail, "Total: NGN 1365.00")
         purchase.refresh_from_db()
         self.assertEqual(purchase.status, Purchase.Status.COMPLETED)
 

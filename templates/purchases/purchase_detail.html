@@ -1,39 +1,18 @@
 {% extends "base.html" %}
-
-{% block title %}Purchase #{{ purchase.pk }} | ShelfSum{% endblock %}
-
+{% block title %}Purchase #{{ purchase.pk }} — ShelfSum{% endblock %}
 {% block content %}
-<section class="page-heading">
-  <p class="eyebrow">Purchase</p>
-  <h1>Purchase #{{ purchase.pk }}</h1>
-  <p>{{ purchase.purchase_date }} · {{ purchase.get_status_display }}</p>
+<a class="back-link" href="{% url 'purchase_list' %}">Back to purchases</a>
+<section class="page-heading"><div><p class="eyebrow">Purchase</p><h1>Purchase #{{ purchase.pk }}</h1><p>{{ purchase.purchase_date|date:"j M Y" }} · <span class="badge {% if purchase.status == 'completed' %}badge-good{% elif purchase.status == 'voided' %}badge-neutral{% else %}badge-warning{% endif %}">{{ purchase.get_status_display }}</span></p></div></section>
+{% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+<section class="panel">
+<dl class="detail-grid"><div><dt>Supplier</dt><dd>{{ purchase.supplier_name|default:"Not added" }}</dd></div><div><dt>Reference</dt><dd>{{ purchase.reference|default:"Not added" }}</dd></div></dl>
+{% if purchase.notes %}<p class="product-description">{{ purchase.notes|linebreaksbr }}</p>{% endif %}
+<div class="table-scroll"><table class="data-table responsive-table"><caption>Purchase products and recorded amounts</caption><thead><tr><th scope="col">Product</th><th scope="col" class="numeric">Quantity</th><th scope="col" class="numeric">Unit cost</th><th scope="col" class="numeric">Total</th></tr></thead><tbody>
+{% for line in purchase.lines.all %}<tr><th scope="row"><a class="product-name" href="{% url 'product_detail' line.product.pk %}">{{ line.product.name }}</a></th><td data-label="Quantity" class="numeric">{{ line.quantity }}</td><td data-label="Unit cost" class="numeric">{{ request.business.currency }} {{ line.unit_cost|floatformat:2 }}</td><td data-label="Total" class="numeric">{{ request.business.currency }} {{ line.line_total|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4">No product lines yet.</td></tr>{% endfor %}
+</tbody></table></div>
+<p class="document-total"><strong>Total: {{ request.business.currency }} {{ purchase.total|floatformat:2 }}</strong></p>
+{% if purchase.status == "draft" %}<p class="state-notice">Draft saved. Stock has not changed. Completing this purchase increases Stock on Hand and makes this record read-only.</p>{% if not request.business.is_demo %}<div class="form-actions"><form method="post">{% csrf_token %}<button class="button" type="submit">Complete Purchase</button></form><a class="button button-secondary" href="{% url 'purchase_edit' purchase.pk %}">Edit draft</a></div>{% endif %}
+{% elif purchase.status == "completed" %}<p class="state-notice">Completed. Stock changes are recorded in immutable movement history.</p>{% if not request.business.is_demo %}<a class="button button-secondary" href="{% url 'purchase_void' purchase.pk %}">Review voiding this Purchase</a>{% endif %}
+{% else %}<p class="state-notice">Voided. Original movements and their reversals are preserved. This record is excluded from active report totals.</p>{% endif %}
 </section>
-
-{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
-
-<dl>
-  <dt>Supplier</dt><dd>{{ purchase.supplier_name|default:"-" }}</dd>
-  <dt>Reference</dt><dd>{{ purchase.reference|default:"-" }}</dd>
-</dl>
-
-<table>
-  <thead><tr><th>Product</th><th>Quantity</th><th>Unit cost</th><th>Total</th></tr></thead>
-  <tbody>
-    {% for line in purchase.lines.all %}
-      <tr><td>{{ line.product.name }}</td><td>{{ line.quantity }}</td><td>{{ line.unit_cost }}</td><td>{{ line.line_total }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<p><strong>Total: {{ purchase.total }}</strong></p>
-{% if purchase.status == "draft" %}
-  <p><a class="button" href="{% url 'purchase_edit' purchase.pk %}">Edit draft</a></p>
-  <form method="post">
-    {% csrf_token %}
-    <button class="button" type="submit">Complete Purchase</button>
-  </form>
-{% endif %}
-{% if purchase.status == "completed" %}
-  <p><a class="button" href="{% url 'purchase_void' purchase.pk %}">Review voiding this Purchase</a></p>
-{% endif %}
 {% endblock %}

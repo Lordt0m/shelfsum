@@ -1,0 +1,10 @@
+<section aria-labelledby="lines-title"><h2 id="lines-title">Products</h2><p>Use one row per Product. Whole quantities only. Mark unused rows for removal.</p>
+{{ formset.management_form }}
+<div data-line-rows>
+{% for line in formset %}<fieldset class="document-line"><legend>Product line {{ forloop.counter }}</legend>{% include "includes/form_fields.html" with form=line %}<p class="line-subtotal" data-saved-total>{% if line.DELETE.value %}Removed from this draft.{% else %}Line total: <output class="line-total">{{ line.line_total|default:line.instance.line_total|default:"0.00" }}</output>{% endif %}</p></fieldset>{% endfor %}
+</div>
+<template data-line-template><fieldset class="document-line"><legend>Product line</legend>{% include "includes/form_fields.html" with form=formset.empty_form %}</fieldset></template>
+<p class="help-text" data-line-feedback role="status"></p>
+<button class="button button-secondary" type="submit" name="add_line" value="1" formnovalidate>Add another Product row</button>
+<div class="document-total"><p data-saved-total><strong>Document total: <output id="document-total">{{ formset.total|floatformat:2 }}</output></strong></p><p class="help-text" data-total-hint>Calculated when you save. Saving a draft does not change stock.</p></div>
+</section>

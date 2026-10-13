@@ -2,6 +2,7 @@
 {% block title %}{{ business.name }} — ShelfSum{% endblock %}
 {% block content %}
 <section class="page-heading"><div><p class="eyebrow">{{ membership.get_role_display }} workspace</p><h1>Overview</h1><p>Your stock today, and the changes behind it.</p></div>{% if not business.is_demo %}<a class="button" href="{% url 'product_create' %}">Add product</a>{% endif %}</section>
+{% if not business.is_demo %}<nav class="quick-actions" aria-label="Daily tasks"><a class="button" href="{% url 'sale_create' %}">Record a sale</a><a class="button button-secondary" href="{% url 'purchase_create' %}">Receive a purchase</a><a class="button button-secondary" href="{% url 'expense_create' %}">Record an expense</a></nav>{% endif %}
 <section class="metrics" aria-label="Inventory summary">
 <a class="metric" href="{% url 'product_list' %}?status=active"><span class="metric-label">Active products</span><strong>{{ dashboard.active_product_count }}</strong><small>Browse products →</small></a>
 <a class="metric" href="{{ dashboard.low_stock_url }}"><span class="metric-label">Low stock</span><strong>{{ dashboard.low_stock_count }}</strong><small>At or below threshold · includes zero →</small></a>

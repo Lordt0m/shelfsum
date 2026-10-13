@@ -5,7 +5,11 @@ class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
         fields = ["date", "category", "description", "amount", "notes"]
-        widgets = {"date": forms.DateInput(attrs={"type": "date"}), "amount": forms.NumberInput(attrs={"step": "0.01", "min": "0.01"})}
+        widgets = {
+            "date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+            "amount": forms.NumberInput(attrs={"step": "0.01", "min": "0.01"}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
     def clean_amount(self):
         amount = self.cleaned_data["amount"]
         if amount <= 0: raise forms.ValidationError("Amount must be greater than zero.")

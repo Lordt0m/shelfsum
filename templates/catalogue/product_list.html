@@ -2,7 +2,7 @@
 {% block title %}Products — ShelfSum{% endblock %}
 {% block content %}
 <section aria-labelledby="page-title">
-  <div class="page-heading"><div><h1 id="page-title">Products</h1><p>Find a product, check its stock, and record the next change.</p></div>{% if not request.business.is_demo %}<a class="button" href="{% url 'product_create' %}"><span aria-hidden="true">+</span> Add product</a>{% endif %}</div>
+  <div class="page-heading product-page-heading"><div><h1 id="page-title">Products</h1><p>Find a product, check its stock, and record the next change.</p></div>{% if not request.business.is_demo %}<a class="button" href="{% url 'product_create' %}"><span aria-hidden="true">+</span> Add product</a>{% endif %}</div>
   <div class="panel">
     <form class="filter-bar product-filters" method="get" role="search" aria-label="Find products">
       <div class="field search-field"><label for="product-search">Search products</label><input id="product-search" type="search" name="q" value="{{ query }}" placeholder="Search by name or SKU"></div>
@@ -12,7 +12,7 @@
     </form>
     {% if query or status != "active" or stock != "all" %}<p class="filter-summary">{{ page_obj.paginator.count }} matching product{{ page_obj.paginator.count|pluralize }} <a href="{% url 'product_list' %}">Clear filters</a></p>{% endif %}
     {% if products %}
-    <div class="table-scroll"><table class="data-table product-table"><caption class="sr-only">Products and current stock balances</caption><thead><tr><th scope="col">Product</th><th scope="col" class="numeric">Stock on Hand</th><th scope="col">Stock status</th><th scope="col" class="numeric">Selling price</th><th scope="col">Actions</th></tr></thead><tbody>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Records table"><table class="data-table product-table"><caption class="sr-only">Products and current stock balances</caption><thead><tr><th scope="col">Product</th><th scope="col" class="numeric">Stock on Hand</th><th scope="col">Stock status</th><th scope="col" class="numeric">Selling price</th><th scope="col">Actions</th></tr></thead><tbody>
     {% for product in products %}<tr>
       <td class="product-identity"><a class="product-name" href="{% url 'product_detail' product.pk %}">{{ product.name }}</a><small>{{ product.sku|default:"No SKU" }}</small></td>
       <td data-label="Stock on Hand" class="numeric"><strong class="quantity">{{ product.stock_on_hand }}</strong><span class="unit"> units</span><small>Low at {{ product.low_stock_threshold }} or below</small></td>

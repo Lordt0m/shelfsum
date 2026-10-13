@@ -72,6 +72,10 @@ Desktop tables become compact labelled records on phones. Shared controls, valid
 
 Core forms are usable without JavaScript. JavaScript is progressive enhancement, not a runtime dependency, and the application does not require an AI model or paid API.
 
+The enhancement source is `frontend/workspace.ts`; `npm run build` compiles it with strict TypeScript into `static/js/workspace.js`. Build before running Django or collecting static files, and rebuild after editing TypeScript. The emitted file is a build artifact, not source. TypeScript adds instant Product rows, focuses linked server errors, invalidates stale stock previews and shows submission progress while preserving each submitter's name/value. Money, stock balances and authorization remain entirely server-side. Unsaved totals are hidden after line edits and recalculated when saving a draft. No inline client-side money or stock calculations remain.
+
+Purchases, Sales and Expenses share labelled filters and responsive record tables. Draft, completed, reversed and correction-linked records explain their lifecycle. Demo screens hide write actions; server-side Demo protection remains unchanged. Keyboard and repeated actions have no movement animation. Reduced motion disables transitions. Release automation builds enhancements before static collection; the hosted build and PostgreSQL concurrency suite still require separate release verification.
+
 ## Architecture
 
 ShelfSum is one deployable Django monolith with explicit modules and small application-service seams:
@@ -140,13 +144,15 @@ Permission and isolation checks run on the server. Hiding a link in the interfac
 
 ## Local setup
 
-Requirements: Python 3.13 and Git. SQLite is the default local database, so PostgreSQL is not needed for the fast development loop.
+Requirements: Python 3.13, Node.js 22.23.2 (with npm; pinned in `.node-version`, CI and hosting configuration), and Git. SQLite is the default local database, so PostgreSQL is not needed for the fast development loop.
 
 ### Windows PowerShell
 
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
+npm ci
+npm run build
 .\.venv\Scripts\python manage.py migrate
 .\.venv\Scripts\python manage.py seed_demo
 .\.venv\Scripts\python manage.py runserver
@@ -162,6 +168,7 @@ The seed command is deterministic: it creates the canonical fictional Business o
 
 ```powershell
 .\.venv\Scripts\python manage.py check
+npm run check
 .\.venv\Scripts\python manage.py makemigrations --check --dry-run
 .\.venv\Scripts\python manage.py test
 ```

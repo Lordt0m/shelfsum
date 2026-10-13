@@ -142,3 +142,94 @@ class InterfaceTests(TestCase):
         self.assertContains(response, "Needs attention")
         self.assertEqual([row.movement.product_id for row in response.context["dashboard"]["recent_movements"]], [product.pk])
         self.assertNotContains(response, "Hidden")
+
+    def test_demo_document_screens_do_not_offer_writes(self):
+        from purchases.models import Purchase
+        from sales.models import Sale
+        from expenses.models import Expense
+        from django.utils import timezone
+
+        purchase = Purchase.objects.create(business=self.business, creator=self.owner, purchase_date=timezone.localdate())
+        sale = Sale.objects.create(business=self.business, creator=self.owner, sale_date=timezone.localdate())
+        expense = Expense.objects.create(business=self.business, actor=self.owner, date=timezone.localdate(), category="other", description="Delivery", amount=Decimal("20"))
+        self.business.is_demo = True
+        self.business.save(update_fields=["is_demo"])
+        for route in ("purchase_list", "sale_list", "expense_list"):
+            response = self.client.get(reverse(route))
+            self.assertNotContains(response, reverse(route.replace("_list", "_create")))
+        for route, record in (("purchase_detail", purchase), ("sale_detail", sale), ("expense_detail", expense)):
+            response = self.client.get(reverse(route, args=[record.pk]))
+            self.assertContains(response, "Read-only demo")
+            self.assertNotContains(response, "Complete Purchase")
+            self.assertNotContains(response, "Complete Sale")
+            self.assertNotContains(response, "Void Expense")
+
+    def test_document_forms_keep_native_add_line_and_server_totals(self):
+        self.product()
+        for route in ("purchase_create", "sale_create"):
+            response = self.client.get(reverse(route))
+            self.assertContains(response, 'name="add_line"')
+            self.assertContains(response, 'data-line-template')
+            self.assertContains(response, "Calculated when you save")
+            self.assertNotContains(response, "toFixed")
+
+    def test_invalid_expense_has_linked_error_summary_and_preserves_input(self):
+        response = self.client.post(reverse("expense_create"), {"date": "2026-10-13", "category": "other", "description": "Delivery", "amount": "-5", "notes": ""})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="error-summary"')
+        self.assertContains(response, 'href="#id_amount"')
+        self.assertContains(response, 'id="id_amount_error"')
+        self.assertContains(response, "Delivery")
+
+    def test_expense_correction_preserves_date_in_native_date_input(self):
+        from datetime import date
+        from expenses.models import Expense
+
+        expense = Expense.objects.create(business=self.business, actor=self.owner, date=date(2026, 9, 12), category="transport", description="Delivery", amount=Decimal("20"))
+        response = self.client.get(reverse("expense_correct", args=[expense.pk]))
+        self.assertContains(response, 'type="date" name="date" value="2026-09-12"')
+
+    def test_void_confirmation_pages_have_valid_titles_and_closed_sections(self):
+        from html.parser import HTMLParser
+        from purchases.models import Purchase, PurchaseLine
+        from purchases.services import complete_purchase
+        from sales.models import Sale, SaleLine
+        from sales.services import complete_sale
+        from django.utils import timezone
+
+        class PageStructure(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.sections = 0
+                self.in_title = False
+                self.title = ""
+
+            def handle_starttag(self, tag, attrs):
+                if tag == "section":
+                    self.sections += 1
+                if tag == "title":
+                    self.in_title = True
+
+            def handle_endtag(self, tag):
+                if tag == "section":
+                    self.sections -= 1
+                if tag == "title":
+                    self.in_title = False
+
+            def handle_data(self, data):
+                if self.in_title:
+                    self.title += data
+
+        product = self.product()
+        purchase = Purchase.objects.create(business=self.business, creator=self.owner, purchase_date=timezone.localdate())
+        PurchaseLine.objects.create(purchase=purchase, product=product, quantity=1, unit_cost=Decimal("8"))
+        complete_purchase(business=self.business, actor=self.owner, purchase=purchase)
+        sale = Sale.objects.create(business=self.business, creator=self.owner, sale_date=timezone.localdate())
+        SaleLine.objects.create(sale=sale, product=product, quantity=1, unit_price=Decimal("12"))
+        complete_sale(business=self.business, actor=self.owner, sale=sale)
+        for route, record, label in (("purchase_void", purchase, "Purchase"), ("sale_void", sale, "Sale")):
+            response = self.client.get(reverse(route, args=[record.pk]))
+            parser = PageStructure()
+            parser.feed(response.content.decode())
+            self.assertEqual(parser.title.strip(), f"Void {label} #{record.pk} | ShelfSum")
+            self.assertEqual(parser.sections, 0)

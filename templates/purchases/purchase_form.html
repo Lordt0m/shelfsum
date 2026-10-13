@@ -1,53 +1,12 @@
 {% extends "base.html" %}
-
-{% block title %}{% if purchase %}Edit Purchase{% else %}New Purchase{% endif %} | ShelfSum{% endblock %}
-
+{% block title %}{% if purchase %}Edit Purchase{% else %}New Purchase{% endif %} — ShelfSum{% endblock %}
 {% block content %}
-<section class="page-heading">
-  <p class="eyebrow">Purchases</p>
-  <h1>{% if purchase %}Edit Purchase #{{ purchase.pk }}{% else %}New Purchase{% endif %}</h1>
-</section>
-
-<form method="post">
-  {% csrf_token %}
-
-  {% include "includes/form_fields.html" %}
-
-  <h2>Products</h2>
-  <p>Add one row for each Product. Remove unused rows before saving.</p>
-  {{ formset.management_form }}
-  {{ formset.non_form_errors }}
-  {% for line in formset %}
-    <fieldset>
-      <legend>Product line {{ forloop.counter }}</legend>
-
-      {% include "includes/form_fields.html" with form=line %}
-      <p>Line total: <output class="line-total">{{ line.line_total|default:line.instance.line_total|default:"0.00" }}</output></p>
-    </fieldset>
-  {% endfor %}
-  <p><strong>Document total: <output id="document-total">{{ formset.total|floatformat:2 }}</output></strong></p>
-  <button type="submit" name="add_line" value="1" formnovalidate>Add another Product row</button>
-  <button class="button" type="submit">Save draft</button>
+<a class="back-link" href="{% url 'purchase_list' %}">Back to purchases</a>
+<section class="page-heading"><div><p class="eyebrow">Purchases · draft</p><h1>{% if purchase %}Edit Purchase #{{ purchase.pk }}{% else %}New Purchase{% endif %}</h1><p>Save a draft, review the details, then complete it to change stock.</p></div></section>
+<form method="post" class="panel document-form" data-document-form novalidate>
+{% csrf_token %}{% include "includes/error_summary.html" %}
+<section class="document-meta" aria-label="Purchase details">{% include "includes/form_fields.html" %}</section>
+{% include "includes/document_lines.html" %}
+<div class="form-actions"><button class="button" type="submit"{% if request.business.is_demo %} disabled{% endif %}>Save draft</button><a href="{% url 'purchase_list' %}">Cancel</a></div>
 </form>
-<script>
-  (() => {
-    const documentTotal = document.querySelector('#document-total');
-    const form = documentTotal?.closest('form');
-    if (!form || !documentTotal) return;
-    const updateTotals = () => {
-      let total = 0;
-      form.querySelectorAll('fieldset').forEach((fieldSet) => {
-        const quantity = Number(fieldSet.querySelector('[name$="-quantity"]')?.value || 0);
-        const unitCost = Number(fieldSet.querySelector('[name$="-unit_cost"]')?.value || 0);
-        const removed = fieldSet.querySelector('[name$="-DELETE"]')?.checked;
-        const lineTotal = removed ? 0 : quantity * unitCost;
-        fieldSet.querySelector('.line-total').textContent = lineTotal.toFixed(2);
-        total += lineTotal;
-      });
-      documentTotal.textContent = total.toFixed(2);
-    };
-    form.addEventListener('input', updateTotals);
-    updateTotals();
-  })();
-</script>
 {% endblock %}

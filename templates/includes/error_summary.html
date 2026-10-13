@@ -1,0 +1,12 @@
+{% if form.errors or formset.total_error_count %}
+<section class="form-errors" id="error-summary" tabindex="-1" aria-labelledby="error-title">
+  <h2 id="error-title">Check the details below</h2>
+  <p>Your entries are still here. Nothing has been saved.</p>
+  <ul>
+    {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+    {% for field in form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}
+    {% for error in formset.non_form_errors %}<li>{{ error }}</li>{% endfor %}
+    {% for line in formset %}{% for error in line.non_field_errors %}<li>Product line: {{ error }}</li>{% endfor %}{% for field in line %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}{% endfor %}
+  </ul>
+</section>
+{% endif %}

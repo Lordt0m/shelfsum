@@ -8,6 +8,8 @@ services:
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     healthCheckPath: /health/
     envVars:
+      - key: NODE_VERSION
+        value: 22.23.2
       - key: SHELFSUM_ENV
         value: production
       - key: SECRET_KEY

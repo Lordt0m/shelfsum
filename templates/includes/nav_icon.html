@@ -1,0 +1,11 @@
+<svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{% if name == 'overview' %}<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+{% elif name == 'products' %}<path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z M3 8l9 5 9-5 M12 13v8"/>
+{% elif name == 'adjustments' %}<path d="M4 7h16 M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--surface)"/><circle cx="15" cy="17" r="3" fill="var(--surface)"/>
+{% elif name == 'history' %}<path d="M3 12a9 9 0 1 0 3-6 M3 3v5h5 M12 7v5l3 2"/>
+{% elif name == 'purchases' %}<path d="M12 3v12 m-5-5 5 5 5-5 M4 15v6h16v-6"/>
+{% elif name == 'sales' %}<path d="M12 15V3 m-5 5 5-5 5 5 M4 15v6h16v-6"/>
+{% elif name == 'expenses' %}<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z M9 8h6 M9 12h6"/>
+{% elif name == 'reports' %}<path d="M4 3v18h17 M8 16v-5 M13 16V6 M18 16v-8"/>
+{% else %}<path d="M5 4h14v16H5Z M8 8h8 M8 12h8 M8 16h5"/>{% endif %}
+</svg>

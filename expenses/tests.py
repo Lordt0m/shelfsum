@@ -185,7 +185,8 @@ class ExpenseRequestTests(TestCase):
         self.assertEqual(AuditEvent.objects.filter(business=self.business).count(), 1)
         self.assertContains(
             self.client.get(reverse("expense_detail", args=[original.pk])),
-            f"Replaced by Expense #{replacement.pk}",
+            f'<a href="{reverse("expense_detail", args=[replacement.pk])}">Expense #{replacement.pk}</a>',
+            html=True,
         )
         self.assertEqual(self.client.post(reverse("expense_correct", kwargs={"expense_id": original.pk}), self.payload()).status_code, 400)
 

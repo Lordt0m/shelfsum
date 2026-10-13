@@ -6,6 +6,8 @@ db.sqlite3
 .env.*
 !.env.example
 staticfiles/
+node_modules/
+static/js/workspace.js
 .coverage
 htmlcov/
 .pytest_cache/

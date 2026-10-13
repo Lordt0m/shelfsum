@@ -6,11 +6,11 @@
   <p class="eyebrow">Inventory</p><h1 id="page-title">{{ page_title }}</h1>
   <p class="form-intro">Use an adjustment for damage, missing stock, found stock or a correction. Opening stock is recorded when creating a Product.</p>
   <form method="post" id="adjustment-form" novalidate>{% csrf_token %}
-    {% include "includes/form_fields.html" %}
+    {% include "includes/error_summary.html" %}{% include "includes/form_fields.html" %}
     <div class="live-estimate" id="stock-estimate" aria-live="polite"{% if current_stock is None %} hidden{% endif %}>
       <p>Current Stock on Hand: <strong id="current-stock">{{ current_stock|default_if_none:"—" }}</strong> units</p>
-      <p id="estimated-balance-line" hidden>Estimated new balance: <strong id="estimated-stock"></strong> units. Preview to check before recording.</p>
     </div>
+    <p class="help-text" id="preview-hint" role="status" hidden>Details changed. Preview again to check the current and resulting stock balances.</p>
     <div class="form-actions"><button class="button secondary" type="submit" name="action" value="preview"{% if request.business.is_demo %} disabled{% endif %}>Preview adjustment</button><a href="{% url 'product_list' %}">Cancel</a></div>
     {% if preview is not None %}
     <section class="preview-panel" id="confirmed-preview" aria-labelledby="preview-title">
@@ -23,5 +23,4 @@
     {% endif %}
   </form>
 </section>
-{{ stock_choices|json_script:"stock-choices" }}
 {% endblock %}

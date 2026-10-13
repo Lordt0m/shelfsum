@@ -1,0 +1,7 @@
+<form method="get" class="filter-bar" aria-label="Filter records">
+  <div class="field"><label for="status">Status</label><select id="status" name="status"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="date_from">From</label><input id="date_from" type="date" name="date_from" value="{{ date_from }}"></div>
+  <div class="field"><label for="date_to">To</label><input id="date_to" type="date" name="date_to" value="{{ date_to }}"></div>
+  <button class="button button-secondary" type="submit">Apply filters</button>
+</form>
+{% if filter_error %}<p class="form-error" role="alert">{{ filter_error }}</p>{% endif %}

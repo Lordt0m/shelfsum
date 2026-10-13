@@ -4,7 +4,7 @@
 <a class="back-link" href="{% url 'product_list' %}">← Products</a>
 <section class="form-shell" aria-labelledby="page-title">
   <p class="eyebrow">Catalogue</p><h1 id="page-title">{{ page_title }}</h1><p class="form-intro">{{ intro }}</p>
-  <form method="post" novalidate>{% csrf_token %}{% include "includes/form_fields.html" %}
+  <form method="post" novalidate>{% csrf_token %}{% include "includes/error_summary.html" %}{% include "includes/form_fields.html" %}
     <div class="form-actions"><button class="button" type="submit"{% if request.business.is_demo %} disabled{% endif %}>{{ submit_label }}</button><a href="{% url 'product_list' %}">Cancel</a></div>
   </form>
 </section>
