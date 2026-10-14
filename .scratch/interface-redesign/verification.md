@@ -33,6 +33,19 @@ Staging deployment `dep-db7aas59fdbs73df7eng` is live at the application ref abo
 
 The user authorised committing this accurate record with those limits retained. The documentation commit does not change runtime behaviour or resolve the remaining release checks.
 
-## Production status
+## Production status before release
 
 At the final status check, https://shelfsum.onrender.com still served `c546e3a38694bbde1dec96af090fe8488f7b5b23`. The production service tracks `main` with automatic deployment enabled. No production merge or deployment was performed. Production release requires a separate authorised release decision, including disposition of the remaining checks above.
+
+## Authorised production release
+
+The user subsequently authorised merging and releasing production. On 13 October 2026 UTC, `main` was fast-forwarded from `c546e3a38694bbde1dec96af090fe8488f7b5b23` to the exact tested public ref `3c89e6e6abeae491072b75ef091694604dd07049`. GitHub connector PR creation returned an integration 403; the existing authorised Git connection performed a normal non-force push. No PR was created.
+
+- Exact-ref CI passed all 287 PostgreSQL tests with zero skips, including concurrency, plus migration drift, repeat seed, TypeScript build, static collection and deployment configuration checks: https://github.com/Lordt0m/shelfsum/actions/runs/38478628610. CI on `main` also passed: https://github.com/Lordt0m/shelfsum/actions/runs/38479446378.
+- Independent fresh-context release review found no material blockers. Protected write services, models and schema were unchanged; Business-scoped ledger presentation, POST/CSRF actions and progressive enhancements were reviewed. Large-ledger performance remains unbenchmarked.
+- Staging redeployment `dep-db7b5825b2lc73f8k8o0` became live at the exact release ref. All 41 HTTP release checks passed, including byte-identical canonical demo CSV exports for both roles before and after redeployment. This resolves the earlier restart/persistence limit.
+- Production automatic deploy `dep-db7b73u7bikc73cqugf0` became live, followed by Blueprint-sync deploy `dep-db7b7406v3gs73ehj900`, also live at the same ref. The successful build runs migrations and deterministic demo seeding after compiling and collecting static assets.
+- All 40 production HTTP release checks passed: health and cache headers, public landing and sign-in protection, Demo Owner and Staff sign-in, read-only banners, new dashboard, Owner disabled settings action, Staff settings denial, catalogue/purchases/sales/expenses/adjustments/reports/movement routes, all five CSV exports for both roles, hashed CSS/JavaScript and immutable static caching. No shop records were created or changed by these production checks.
+- Render's error-level log query from deployment start to 22:43:03 UTC returned no entries. This resolves the earlier unavailable-log check for that release interval only.
+
+Production: https://shelfsum.onrender.com. The visual and screen-reader scope above remains unchanged; the release HTTP checks do not claim additional browser interaction coverage. This follow-up record changes documentation only.
