@@ -16,6 +16,21 @@ from core.demo import (
 
 
 class LandingPageTests(TestCase):
+    def test_landing_explains_stock_without_javascript_and_keeps_real_routes(self):
+        response = self.client.get(reverse("landing"))
+        self.assertContains(response, 'class="landing-page"')
+        self.assertContains(response, "A good day starts")
+        self.assertContains(response, "Fictional product preview")
+        self.assertContains(response, "Opening stock")
+        self.assertContains(response, "Completed Purchase")
+        self.assertContains(response, "Completed Sale")
+        self.assertContains(response, "Closing stock")
+        self.assertContains(response, 'href="' + reverse("sign_in") + '"')
+        self.assertContains(response, 'href="' + reverse("register") + '"')
+        self.assertContains(response, "css/landing.css")
+        self.assertContains(response, "js/landing.js")
+        self.assertContains(response, "data-reveal", count=2)
+
     def test_visitor_can_understand_the_product(self):
         response = self.client.get(reverse("landing"))
 
