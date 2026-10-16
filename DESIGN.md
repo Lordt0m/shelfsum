@@ -196,7 +196,7 @@ The preview is illustrative product evidence, not a screenshot of the signed-in 
 
 Twenty decorative stock rectangles encode the example count; their grid is hidden from assistive technology because the text states the same information. The server-rendered state shows closing stock (15), opening stock (12), Purchase (+8), Sale (−5) and retained original rows.
 
-Pointer replay shows (12) immediately, (20) after (1000ms), then (15) after (2200ms). Stock opacity/scale transitions take (250ms) with `cubic-bezier(.2,0,0,1)`; current ledger background takes (150ms). Replay clears previous timers. Keyboard or assistive activation (`event.detail === 0`) settles instantly at the final count and writes a complete explanation to a `role="status"` region. Reduced motion and hidden-document changes also settle the sequence. The replay control appears only when JavaScript enhances the page.
+Pointer replay shows (12) immediately, (20) after (900ms), then (15) after (2300ms). Twenty fixed shelf slots hold decorative tokens: eight arrive from below for a Purchase; five leave to the right for a Sale. Transform/opacity transitions take (480ms), staggered (45ms), with `cubic-bezier(.2,0,0,1)`; current ledger background takes (150ms). These longer durations explain a fictional shop day, not an operational wait. Replay clears previous timers and CSS retargets from the rendered position. Keyboard or assistive activation (`event.detail === 0`) settles instantly at the final count and writes a complete explanation to a `role="status"` region. Reduced motion and hidden-document changes also settle the sequence. The replay control appears only when JavaScript enhances the page.
 
 ### Credentials and evidence disclosures
 
@@ -204,7 +204,7 @@ Use native `details`/`summary` for credentials and footer evidence. Owner creden
 
 ### Entry and reveal motion
 
-Only `prefers-reduced-motion:no-preference` enables entrance animation: hero text (650ms), supporting delays (100/200/300ms), preview (800ms with 200ms delay), and intersection reveal (600ms). Entry translates (12px) while opacity moves (.65 → 1); preview translates (16px) with rotation (0 → 2deg) and opacity (.7 → 1). Exactly two blocks reveal: the stock introduction and demo heading. Reveal observers fire once at threshold (.15); stock autoplay starts once at (.35). Content is never initially hidden pending an observer. Reduced motion disables transitions and animations, removes pointer-press scaling, and removes the preview rotation.
+JavaScript adds `lp-motion-ready` only with normal motion enabled. Hero copy enters over (700ms), with semantic groups delayed (100/200/300ms). The preview settles over (850ms), delayed (150ms), from a small lift, rotation and scale (.96); its heading, stock summary, product and retained rows build at (100ms) intervals. Stock introduction enters laterally (650ms); the demo invitation has a small welcoming lift/scale (650ms). Exactly two blocks reveal, once at observer threshold (.15); stock autoplay starts once at (.35). All text begins visible, including during delays, and links remain active. Pointer press scales (.96) over (100ms), releasing instantly; keyboard actions do not scale. Reduced motion disables transitions and animations, removes pointer-press scaling and preview rotation, and settles the stock story. No new dependencies or backend changes.
 
 ## Do's and Don'ts
 

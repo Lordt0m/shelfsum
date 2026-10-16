@@ -30,6 +30,11 @@ class LandingPageTests(TestCase):
         self.assertContains(response, "css/landing.css")
         self.assertContains(response, "js/landing.js")
         self.assertContains(response, "data-reveal", count=2)
+        # The final stock explanation is complete before the enhancement runs.
+        self.assertContains(response, '<span data-story-count>15</span>')
+        self.assertContains(response, 'class="lp-unit-slot"', count=20)
+        self.assertContains(response, 'class="lp-unit lp-unit-empty"', count=5)
+        self.assertContains(response, 'data-story-replay hidden')
 
     def test_visitor_can_understand_the_product(self):
         response = self.client.get(reverse("landing"))

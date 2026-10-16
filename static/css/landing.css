@@ -1,3 +1,50 @@
+/* Landing motion: an authored entrance, a delivery, and a retained ledger. */
+.landing-page [data-hero-enter], .landing-page .lp-revealed { animation:none; }
+.landing-page .lp-unit {
+  display:block;
+  height:100%;
+  transition:transform 480ms var(--lp-ease), opacity 480ms var(--lp-ease);
+  transform:translate(0,0) scale(1);
+}
+.landing-page .lp-unit-slot { height:34px; overflow:hidden; border-radius:4px; background:#174b3926; }
+.landing-page .lp-unit-empty { transform:translateY(110%) scale(.92); opacity:0; }
+.landing-page .lp-unit-sold { transform:translateX(110%) scale(.92); }
+.landing-page .lp-instant .lp-unit { transition:none; }
+.landing-page .lp-pointer-pressed { transition:transform 100ms var(--lp-ease), background-color 150ms, color 150ms; }
+@media (prefers-reduced-motion:no-preference) {
+  .landing-page.lp-motion-ready .lp-hero-copy [data-hero-enter] {
+    animation:lp-copy-arrive 700ms var(--lp-ease) both;
+  }
+  .landing-page.lp-motion-ready .lp-hero-copy>p { animation-delay:100ms; }
+  .landing-page.lp-motion-ready .lp-hero-copy .lp-actions { animation-delay:200ms; }
+  .landing-page.lp-motion-ready .lp-hero-copy .lp-hero-note { animation-delay:300ms; }
+  .landing-page.lp-motion-ready .lp-preview[data-hero-enter] {
+    animation:lp-shelf-arrive 850ms var(--lp-ease) 150ms both;
+  }
+  .landing-page.lp-motion-ready .lp-preview-heading,
+  .landing-page.lp-motion-ready .lp-preview-summary,
+  .landing-page.lp-motion-ready .lp-preview-product,
+  .landing-page.lp-motion-ready .lp-preview-movements li {
+    animation:lp-preview-detail 600ms var(--lp-ease) 300ms both;
+  }
+  .landing-page.lp-motion-ready .lp-preview-summary { animation-delay:400ms; }
+  .landing-page.lp-motion-ready .lp-preview-product { animation-delay:500ms; }
+  .landing-page.lp-motion-ready .lp-preview-movements li { animation-delay:600ms; }
+  .landing-page.lp-motion-ready .lp-preview-movements li+li { animation-delay:700ms; }
+  .landing-page .lp-section-intro.lp-revealed h2 { animation:lp-story-arrive 650ms var(--lp-ease) both; }
+  .landing-page .lp-section-intro.lp-revealed p { animation:lp-copy-arrive 600ms var(--lp-ease) 100ms both; }
+  .landing-page .lp-demo-heading.lp-revealed h2 { animation:lp-welcome 650ms var(--lp-ease) both; }
+  .landing-page .lp-demo-heading.lp-revealed p { animation:lp-preview-detail 500ms var(--lp-ease) 100ms both; }
+}
+@keyframes lp-copy-arrive { from { opacity:.6; transform:translateY(18px); } to { opacity:1; transform:none; } }
+@keyframes lp-shelf-arrive { from { opacity:.65; transform:translate(0,28px) rotate(-2deg) scale(.96); } to { opacity:1; transform:rotate(2deg) scale(1); } }
+@keyframes lp-preview-detail { from { opacity:.55; transform:translateY(10px); } to { opacity:1; transform:none; } }
+@keyframes lp-story-arrive { from { opacity:.65; transform:translateX(-18px); } to { opacity:1; transform:none; } }
+@keyframes lp-welcome { from { opacity:.65; transform:translateY(12px) scale(.97); } to { opacity:1; transform:none; } }
+@media (max-width:720px) {
+  .landing-page .lp-unit-slot { height:28px; }
+  @keyframes lp-shelf-arrive { from { opacity:.65; transform:translateY(24px) scale(.96); } to { opacity:1; transform:none; } }
+}
 @font-face{
   font-family:Bricolage;
   src:url('../fonts/bricolage-grotesque.ttf') format('truetype');
@@ -557,36 +604,6 @@
                                                                                                                                                                                                                                                                               position:static;
                                                                                                                                                                                                                                                                               margin-bottom:20px}
                                                                                                                                                                                                                                                                             }
-                                                                                                                                                                                                                                                                            @media(prefers-reduced-motion:no-preference){
-                                                                                                                                                                                                                                                                              .lp-hero [data-hero-enter]{
-                                                                                                                                                                                                                                                                                animation:lp-enter 650ms var(--lp-ease) both}
-                                                                                                                                                                                                                                                                                .lp-hero-copy>p[data-hero-enter]{
-                                                                                                                                                                                                                                                                                  animation-delay:100ms}
-                                                                                                                                                                                                                                                                                  .lp-actions[data-hero-enter]{
-                                                                                                                                                                                                                                                                                    animation-delay:200ms}
-                                                                                                                                                                                                                                                                                    .lp-hero-note[data-hero-enter]{
-                                                                                                                                                                                                                                                                                      animation-delay:300ms}
-                                                                                                                                                                                                                                                                                      .lp-preview[data-hero-enter]{
-                                                                                                                                                                                                                                                                                        animation:lp-preview-enter 800ms var(--lp-ease) 200ms both}
-                                                                                                                                                                                                                                                                                        .lp-revealed{
-                                                                                                                                                                                                                                                                                          animation:lp-enter 600ms var(--lp-ease) both}
-                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                        @keyframes lp-enter{
-                                                                                                                                                                                                                                                                                          from{
-                                                                                                                                                                                                                                                                                            opacity:.65;
-                                                                                                                                                                                                                                                                                            transform:translateY(12px)}
-                                                                                                                                                                                                                                                                                            to{
-                                                                                                                                                                                                                                                                                              opacity:1;
-                                                                                                                                                                                                                                                                                              transform:translateY(0)}
-                                                                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                                                                            @keyframes lp-preview-enter{
-                                                                                                                                                                                                                                                                                              from{
-                                                                                                                                                                                                                                                                                                opacity:.7;
-                                                                                                                                                                                                                                                                                                transform:rotate(0) translateY(16px)}
-                                                                                                                                                                                                                                                                                                to{
-                                                                                                                                                                                                                                                                                                  opacity:1;
-                                                                                                                                                                                                                                                                                                  transform:rotate(2deg) translateY(0)}
-                                                                                                                                                                                                                                                                                                }
                                                                                                                                                                                                                                                                                                 @media(prefers-reduced-motion:reduce){
                                                                                                                                                                                                                                                                                                   .lp-pointer-pressed{
                                                                                                                                                                                                                                                                                                     transform:none}
@@ -724,6 +741,4 @@
                                                                                                                                                                                                                                                                                                                                                                                                       .lp-footer>.lp-wrap{
                                                                                                                                                                                                                                                                                                                                                                                                         grid-template-columns:1fr;
                                                                                                                                                                                                                                                                                                                                                                                                         gap:20px}
-                                                                                                                                                                                                                                                                                                                                                                                                        .lp-preview[data-hero-enter]{
-                                                                                                                                                                                                                                                                                                                                                                                                          animation-name:lp-enter}
                                                                                                                                                                                                                                                                                                                                                                                                         }

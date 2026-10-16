@@ -2,6 +2,7 @@
   const root = document.querySelector<HTMLElement>(".landing-page");
   if (!root) return;
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  if (!reduced.matches) root.classList.add("lp-motion-ready");
   const story = root.querySelector<HTMLElement>("[data-stock-story]");
   const count = root.querySelector<HTMLElement>("[data-story-count]");
   const description = root.querySelector<HTMLElement>("[data-story-description]");
@@ -17,21 +18,30 @@
     { quantity: 15, text: "A completed Sale removes 5 units. Both movements stay in the history." },
   ];
   const clear = () => { timers.splice(0).forEach(window.clearTimeout); };
-  const show = (index: number) => {
+  const show = (index: number, immediate = false) => {
     const frame = frames[index];
     if (count) count.textContent = String(frame.quantity);
     if (description) description.textContent = frame.text;
-    units.forEach((unit, position) => unit.classList.toggle("lp-unit-empty", position >= frame.quantity));
+    story?.setAttribute("data-story-phase", String(index));
+    units.forEach((unit, position) => {
+      // CSS transitions retarget from the rendered position on interruption.
+      unit.style.transitionDelay = immediate ? "0ms" : `${Math.max(0, position - (index === 1 ? 12 : 15)) * 45}ms`;
+      unit.classList.toggle("lp-unit-empty", position >= frame.quantity);
+      unit.classList.toggle("lp-unit-sold", index === 2 && position >= 15);
+    });
     rows.forEach((row, position) => row.classList.toggle("lp-current", position === index));
   };
-  const settle = () => { clear(); story?.classList.add("lp-instant"); show(2); };
+  const settle = () => { clear(); story?.classList.add("lp-instant"); show(2, true); };
   const play = () => {
     clear(); played = true;
-    if (reduced.matches || document.hidden) { show(2); return; }
+    if (reduced.matches || document.hidden) { settle(); return; }
     story?.classList.remove("lp-instant");
     show(0);
-    timers.push(window.setTimeout(() => show(1), 1000));
-    timers.push(window.setTimeout(() => show(2), 2200));
+    timers.push(window.setTimeout(() => show(1), 900));
+    timers.push(window.setTimeout(() => show(2), 2300));
+    timers.push(window.setTimeout(() => {
+      if (status) status.textContent = "Example complete: 15 units remain. Purchase and Sale movements retained.";
+    }, 3100));
   };
   if (replay) {
     replay.hidden = false;
@@ -43,7 +53,9 @@
       } else play();
     });
   }
-  reduced.addEventListener("change", () => { if (reduced.matches) settle(); });
+  reduced.addEventListener("change", () => {
+    if (reduced.matches) { root.classList.remove("lp-motion-ready"); settle(); }
+  });
   document.addEventListener("visibilitychange", () => { if (document.hidden) settle(); });
   root.querySelectorAll<HTMLElement>(".lp-button, .lp-replay").forEach((button) => {
     button.addEventListener("pointerdown", () => { if (!reduced.matches) button.classList.add("lp-pointer-pressed"); });

@@ -1,5 +1,7 @@
 # Landing redesign verification
 
+Follow-up: the 16 October expressive-motion pass is recorded in issues/02-expressive-motion.md. Both JavaScript-disabled demo sign-in submissions are now verified there; the historical limits below describe the 14 October pass.
+
 14 October 2026. Local-only implementation on `codex/landing-redesign`, based on production documentation ref `aebef64`. No push, merge or deployment.
 
 ## Executed checks

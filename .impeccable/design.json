@@ -266,33 +266,33 @@
       },
       {
         "name": "stock-unit",
-        "value": "250ms",
-        "purpose": "Opacity and scale of decorative stock units."
+        "value": "480ms / 45ms stagger",
+        "purpose": "Tokens arrive from below for Purchase and leave right for Sale inside fixed decorative shelf slots."
       },
       {
         "name": "hero-entry",
-        "value": "650ms",
+        "value": "700ms",
         "purpose": "Hero text entry; supporting delays 100ms, 200ms, 300ms."
       },
       {
         "name": "preview-entry",
-        "value": "800ms",
-        "purpose": "Preview entry with 200ms delay."
+        "value": "850ms",
+        "purpose": "Preview entry delayed 150ms; internal semantic groups build at 100ms intervals."
       },
       {
         "name": "section-reveal",
-        "value": "600ms",
-        "purpose": "Only stock introduction and demo heading; observer threshold .15."
+        "value": "650ms",
+        "purpose": "Stock introduction enters laterally; demo heading lifts/scales. Once each at observer threshold .15."
       },
       {
         "name": "receipt-sequence",
-        "value": "0ms / 1000ms / 2200ms",
+        "value": "0ms / 900ms / 2300ms",
         "purpose": "Pointer sequence 12 → 20 → 15; replay interrupts existing timers; keyboard/assistive replay and reduced motion settle immediately."
       },
       {
         "name": "pointer-press",
-        "value": "scale(.96)",
-        "purpose": "Immediate pointerdown response, cleared on pointerup/cancel/leave, blur or keydown; disabled under reduced motion."
+        "value": "scale(.96) / 100ms press / instant release",
+        "purpose": "Pointerdown response, cleared on pointerup/cancel/leave, blur or keydown; disabled under reduced motion."
       },
       {
         "name": "reduced-motion",

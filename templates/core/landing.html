@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Know what is on your shelves. ShelfSum brings stock, sales, purchases and expenses into one clear picture for your small shop.">
   <title>ShelfSum — a clearer picture of your shop</title>
-  <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}?v=20261016-motion">
   <script src="{% static 'js/landing.js' %}" defer></script>
 </head>
 <body class="landing-page">
@@ -36,7 +36,7 @@
     <section class="lp-story lp-wrap" id="purpose" aria-labelledby="story-title">
       <div class="lp-section-intro" data-reveal><h2 id="story-title">Stock moves.<br><span>The story stays.</span></h2><p>A delivery arrives. A customer buys. A quantity needs correcting. ShelfSum keeps the reason behind every change, so your balance has a history you can follow.</p></div>
       <div class="lp-stock-story" data-stock-story>
-        <div class="lp-stock-stage"><div class="lp-stage-heading"><span>Rice · 1 kg</span><span>Fictional example</span></div><div class="lp-stock-number"><span data-story-count>15</span><span>units on the shelf</span></div><div class="lp-unit-grid" aria-hidden="true">{% for unit in "abcdefghijklmnopqrst" %}<span class="lp-unit{% if forloop.counter > 15 %} lp-unit-empty{% endif %}"></span>{% endfor %}</div><p data-story-description>12 to start. 8 received. 5 sold. Every movement retained.</p><button class="lp-replay" type="button" data-story-replay hidden>Replay the shop day <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7"/></svg></button><p class="lp-sr-only" role="status" data-story-status></p></div>
+        <div class="lp-stock-stage"><div class="lp-stage-heading"><span>Rice · 1 kg</span><span>Fictional example</span></div><div class="lp-stock-number"><span data-story-count>15</span><span>units on the shelf</span></div><div class="lp-unit-grid" aria-hidden="true">{% for unit in "abcdefghijklmnopqrst" %}<span class="lp-unit-slot"><span class="lp-unit{% if forloop.counter > 15 %} lp-unit-empty{% endif %}"></span></span>{% endfor %}</div><p data-story-description>12 to start. 8 received. 5 sold. Every movement retained.</p><button class="lp-replay" type="button" data-story-replay hidden>Replay the shop day <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7"/></svg></button><p class="lp-sr-only" role="status" data-story-status></p></div>
         <div class="lp-receipt"><h3>A balance you can explain.</h3><ol class="lp-ledger"><li data-story-step="0"><span>Opening stock<small>Before the delivery</small></span><strong>12</strong></li><li data-story-step="1"><span>Completed Purchase<small>8 units received · 20 on hand</small></span><strong>+8</strong></li><li data-story-step="2"><span>Completed Sale<small>5 units sold · 15 on hand</small></span><strong>−5</strong></li></ol><div class="lp-ledger-total"><span>Closing stock</span><strong>15 units</strong></div><p>Corrections use recorded adjustments or reversals. Original Stock Movements remain in the history.</p></div>
       </div>
     </section>
