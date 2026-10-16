@@ -1,0 +1,417 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T05:44:32Z",
+  "title": "Design System: ShelfSum public landing",
+  "extensions": {
+    "colorMeta": {
+      "green": {
+        "role": "primary",
+        "displayName": "Shopfront Green",
+        "tonalRamp": [
+          "oklch(15% 0.0634 166.63)",
+          "oklch(26.43% 0.0634 166.63)",
+          "oklch(37.86% 0.0634 166.63)",
+          "oklch(49.29% 0.0634 166.63)",
+          "oklch(60.71% 0.0634 166.63)",
+          "oklch(72.14% 0.0634 166.63)",
+          "oklch(83.57% 0.0634 166.63)",
+          "oklch(95% 0.0634 166.63)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Record Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0504 166.58)",
+          "oklch(26.43% 0.0504 166.58)",
+          "oklch(37.86% 0.0504 166.58)",
+          "oklch(49.29% 0.0504 166.58)",
+          "oklch(60.71% 0.0504 166.58)",
+          "oklch(72.14% 0.0504 166.58)",
+          "oklch(83.57% 0.0504 166.58)",
+          "oklch(95% 0.0504 166.58)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Shop Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0164 91.55)",
+          "oklch(26.43% 0.0164 91.55)",
+          "oklch(37.86% 0.0164 91.55)",
+          "oklch(49.29% 0.0164 91.55)",
+          "oklch(60.71% 0.0164 91.55)",
+          "oklch(72.14% 0.0164 91.55)",
+          "oklch(83.57% 0.0164 91.55)",
+          "oklch(95% 0.0164 91.55)"
+        ]
+      },
+      "lime": {
+        "role": "primary",
+        "displayName": "Shelf Lime",
+        "tonalRamp": [
+          "oklch(15% 0.1055 116.42)",
+          "oklch(26.43% 0.1055 116.42)",
+          "oklch(37.86% 0.1055 116.42)",
+          "oklch(49.29% 0.1055 116.42)",
+          "oklch(60.71% 0.1055 116.42)",
+          "oklch(72.14% 0.1055 116.42)",
+          "oklch(83.57% 0.1055 116.42)",
+          "oklch(95% 0.1055 116.42)"
+        ]
+      },
+      "apricot": {
+        "role": "secondary",
+        "displayName": "Stock Apricot",
+        "tonalRamp": [
+          "oklch(15% 0.0945 67.47)",
+          "oklch(26.43% 0.0945 67.47)",
+          "oklch(37.86% 0.0945 67.47)",
+          "oklch(49.29% 0.0945 67.47)",
+          "oklch(60.71% 0.0945 67.47)",
+          "oklch(72.14% 0.0945 67.47)",
+          "oklch(83.57% 0.0945 67.47)",
+          "oklch(95% 0.0945 67.47)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Quiet Green",
+        "tonalRamp": [
+          "oklch(15% 0.0301 153.79)",
+          "oklch(26.43% 0.0301 153.79)",
+          "oklch(37.86% 0.0301 153.79)",
+          "oklch(49.29% 0.0301 153.79)",
+          "oklch(60.71% 0.0301 153.79)",
+          "oklch(72.14% 0.0301 153.79)",
+          "oklch(83.57% 0.0301 153.79)",
+          "oklch(95% 0.0301 153.79)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Ledger Line",
+        "tonalRamp": [
+          "oklch(15% 0.0250 121.95)",
+          "oklch(26.43% 0.0250 121.95)",
+          "oklch(37.86% 0.0250 121.95)",
+          "oklch(49.29% 0.0250 121.95)",
+          "oklch(60.71% 0.0250 121.95)",
+          "oklch(72.14% 0.0250 121.95)",
+          "oklch(83.57% 0.0250 121.95)",
+          "oklch(95% 0.0250 121.95)"
+        ]
+      },
+      "button-hover": {
+        "role": "primary",
+        "displayName": "Invitation Hover",
+        "tonalRamp": [
+          "oklch(15% 0.1102 117.46)",
+          "oklch(26.43% 0.1102 117.46)",
+          "oklch(37.86% 0.1102 117.46)",
+          "oklch(49.29% 0.1102 117.46)",
+          "oklch(60.71% 0.1102 117.46)",
+          "oklch(72.14% 0.1102 117.46)",
+          "oklch(83.57% 0.1102 117.46)",
+          "oklch(95% 0.1102 117.46)"
+        ]
+      },
+      "preview-paper": {
+        "role": "neutral",
+        "displayName": "Preview Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0107 95.16)",
+          "oklch(26.43% 0.0107 95.16)",
+          "oklch(37.86% 0.0107 95.16)",
+          "oklch(49.29% 0.0107 95.16)",
+          "oklch(60.71% 0.0107 95.16)",
+          "oklch(72.14% 0.0107 95.16)",
+          "oklch(83.57% 0.0107 95.16)",
+          "oklch(95% 0.0107 95.16)"
+        ]
+      },
+      "receipt-paper": {
+        "role": "neutral",
+        "displayName": "Receipt Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0135 92.98)",
+          "oklch(26.43% 0.0135 92.98)",
+          "oklch(37.86% 0.0135 92.98)",
+          "oklch(49.29% 0.0135 92.98)",
+          "oklch(60.71% 0.0135 92.98)",
+          "oklch(72.14% 0.0135 92.98)",
+          "oklch(83.57% 0.0135 92.98)",
+          "oklch(95% 0.0135 92.98)"
+        ]
+      },
+      "warm-section": {
+        "role": "neutral",
+        "displayName": "Warm Section",
+        "tonalRamp": [
+          "oklch(15% 0.0189 96.88)",
+          "oklch(26.43% 0.0189 96.88)",
+          "oklch(37.86% 0.0189 96.88)",
+          "oklch(49.29% 0.0189 96.88)",
+          "oklch(60.71% 0.0189 96.88)",
+          "oklch(72.14% 0.0189 96.88)",
+          "oklch(83.57% 0.0189 96.88)",
+          "oklch(95% 0.0189 96.88)"
+        ]
+      },
+      "stock-stage": {
+        "role": "neutral",
+        "displayName": "Stock Stage",
+        "tonalRamp": [
+          "oklch(15% 0.0642 118.17)",
+          "oklch(26.43% 0.0642 118.17)",
+          "oklch(37.86% 0.0642 118.17)",
+          "oklch(49.29% 0.0642 118.17)",
+          "oklch(60.71% 0.0642 118.17)",
+          "oklch(72.14% 0.0642 118.17)",
+          "oklch(83.57% 0.0642 118.17)",
+          "oklch(95% 0.0642 118.17)"
+        ]
+      },
+      "stock-unit": {
+        "role": "primary",
+        "displayName": "Stock Unit",
+        "tonalRamp": [
+          "oklch(15% 0.0900 155.33)",
+          "oklch(26.43% 0.0900 155.33)",
+          "oklch(37.86% 0.0900 155.33)",
+          "oklch(49.29% 0.0900 155.33)",
+          "oklch(60.71% 0.0900 155.33)",
+          "oklch(72.14% 0.0900 155.33)",
+          "oklch(83.57% 0.0900 155.33)",
+          "oklch(95% 0.0900 155.33)"
+        ]
+      },
+      "ledger-current": {
+        "role": "neutral",
+        "displayName": "Current Ledger",
+        "tonalRamp": [
+          "oklch(15% 0.0471 119.04)",
+          "oklch(26.43% 0.0471 119.04)",
+          "oklch(37.86% 0.0471 119.04)",
+          "oklch(49.29% 0.0471 119.04)",
+          "oklch(60.71% 0.0471 119.04)",
+          "oklch(72.14% 0.0471 119.04)",
+          "oklch(83.57% 0.0471 119.04)",
+          "oklch(95% 0.0471 119.04)"
+        ]
+      },
+      "focus": {
+        "role": "secondary",
+        "displayName": "Amber Focus",
+        "tonalRamp": [
+          "oklch(15% 0.1184 73.85)",
+          "oklch(26.43% 0.1184 73.85)",
+          "oklch(37.86% 0.1184 73.85)",
+          "oklch(49.29% 0.1184 73.85)",
+          "oklch(60.71% 0.1184 73.85)",
+          "oklch(72.14% 0.1184 73.85)",
+          "oklch(83.57% 0.1184 73.85)",
+          "oklch(95% 0.1184 73.85)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Shopfront display",
+        "purpose": "Public hero; phone and intermediate sizes override the desktop clamp."
+      },
+      "headline": {
+        "displayName": "Section headline",
+        "purpose": "Public landing section headings."
+      },
+      "title": {
+        "displayName": "Receipt title",
+        "purpose": "Receipt heading; other title contexts have documented local overrides."
+      },
+      "body": {
+        "displayName": "Quiet body",
+        "purpose": "Readable explanatory copy with system sans fallback."
+      },
+      "button": {
+        "displayName": "Action label",
+        "purpose": "Lime and dark landing actions."
+      },
+      "code": {
+        "displayName": "Credential code",
+        "purpose": "Native browser monospace for selectable, wrapping fictional credentials."
+      }
+    },
+    "shadows": [
+      {
+        "name": "preview-lift",
+        "value": "0 18px 40px -18px #082c28a0,0 3px 8px #082c2840",
+        "purpose": "Lift the fictional stock preview from the green hero."
+      },
+      {
+        "name": "sign-in-outline",
+        "value": "0 0 0 1px #c9dac680",
+        "purpose": "Outline the header sign-in action."
+      }
+    ],
+    "motion": [
+      {
+        "name": "lp-ease",
+        "value": "cubic-bezier(.2,0,0,1)",
+        "purpose": "Stock transitions and entrance/reveal easing."
+      },
+      {
+        "name": "action-state",
+        "value": "150ms",
+        "purpose": "Action background/text and current ledger background."
+      },
+      {
+        "name": "stock-unit",
+        "value": "480ms / 45ms stagger",
+        "purpose": "Tokens arrive from below for Purchase and leave right for Sale inside fixed decorative shelf slots."
+      },
+      {
+        "name": "hero-entry",
+        "value": "700ms",
+        "purpose": "Hero text entry; supporting delays 100ms, 200ms, 300ms."
+      },
+      {
+        "name": "preview-entry",
+        "value": "850ms",
+        "purpose": "Preview entry delayed 150ms; internal semantic groups build at 100ms intervals."
+      },
+      {
+        "name": "section-reveal",
+        "value": "650ms",
+        "purpose": "Stock introduction enters laterally; demo heading lifts/scales. Once each at observer threshold .15."
+      },
+      {
+        "name": "receipt-sequence",
+        "value": "0ms / 900ms / 2300ms",
+        "purpose": "Pointer sequence 12 → 20 → 15; replay interrupts existing timers; keyboard/assistive replay and reduced motion settle immediately."
+      },
+      {
+        "name": "pointer-press",
+        "value": "scale(.96) / 100ms press / instant release",
+        "purpose": "Pointerdown response, cleared on pointerup/cancel/leave, blur or keydown; disabled under reduced motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation:none; transition:none; transform:none",
+        "purpose": "Disable entry/transitions and preview or press transforms; settle receipt."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "intermediate",
+        "value": "1000px"
+      },
+      {
+        "name": "phone",
+        "value": "720px"
+      },
+      {
+        "name": "narrow-seal",
+        "value": "400px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Fictional stock preview",
+      "kind": "card",
+      "refersTo": "preview",
+      "description": "Lifted paper preview with explicit fictional qualifier, retained movements and final Stock on Hand.",
+      "html": "<figure class=\"ds-preview\"><div class=\"ds-preview-top\"><span class=\"ds-preview-brand\">ShelfSum</span><span class=\"ds-preview-pill\">Read-only example</span></div><div class=\"ds-preview-heading\"><span>Good morning, Shop Owner</span><h2>Your shelves,<br>at a glance.</h2></div><div class=\"ds-preview-summary\"><div><span>Stock on Hand</span><strong>15 <small>units</small></strong></div><span class=\"ds-stock-label\">In stock</span></div><div class=\"ds-product\"><span class=\"ds-product-mark\" aria-hidden=\"true\">R</span><div><strong>Rice · 1 kg</strong><span>Illustrative Product</span></div></div><ul class=\"ds-movements\" aria-label=\"Example stock movements\"><li><span>Purchase completed<small>Stock received</small></span><strong>+8</strong></li><li><span>Sale completed<small>Stock sold</small></span><strong class=\"ds-out\">−5</strong></li></ul><figcaption>Fictional product preview · opening stock 12, closing stock 15</figcaption></figure>",
+      "css": ".ds-preview{margin:0;background:#fffdf5;color:var(--lp-ink,#183e30);border-radius:16px;box-shadow:0 18px 40px -18px #082c28a0,0 3px 8px #082c2840;overflow:hidden;transform:rotate(2deg);font:400 17px/1.65 'Segoe UI',sans-serif}.ds-preview-top{padding:18px 24px;border-bottom:1px solid var(--lp-line,#d7ddcb);display:flex;align-items:center;justify-content:space-between;gap:12px}.ds-preview-brand{font:700 20px Bricolage,sans-serif}.ds-preview-pill{font-size:12px;padding:3px 9px;background:#edf1df;border-radius:20px}.ds-preview-heading{padding:26px 28px 0}.ds-preview-heading>span{font-size:13px;color:var(--lp-muted,#526457)}.ds-preview-heading h2{font:700 37px/1.04 Bricolage,'Segoe UI',sans-serif;letter-spacing:-.035em;text-wrap:balance;margin:8px 0 0}.ds-preview-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--lp-lime,#dfed9b);margin:24px 28px;padding:20px;border-radius:12px}.ds-preview-summary>div>span{display:block;font-size:13px}.ds-preview-summary strong{font:700 49px/1.2 Bricolage,sans-serif}.ds-preview-summary small{font:400 15px 'Segoe UI',sans-serif}.ds-stock-label{font-size:12px;white-space:nowrap;padding:3px 9px;background:var(--lp-green,#174b39);color:var(--lp-paper,#f7f3e7);border-radius:20px}.ds-product{display:flex;gap:12px;align-items:center;margin:0 28px 14px}.ds-product-mark{width:42px;height:42px;display:grid;place-items:center;background:var(--lp-apricot,#f2bd85);border-radius:8px;font:700 23px Bricolage,sans-serif}.ds-product strong,.ds-product div>span{display:block;font-size:14px}.ds-product div>span{color:var(--lp-muted,#526457);font-size:12px}.ds-movements{list-style:none;margin:0;padding:0 28px}.ds-movements li{display:flex;justify-content:space-between;border-top:1px solid var(--lp-line,#d7ddcb);padding-block:12px;font-size:14px}.ds-movements small{display:block;font-size:12px;color:var(--lp-muted,#526457)}.ds-movements strong{font-size:20px;color:#277a47}.ds-movements .ds-out{color:#945011}.ds-preview figcaption{padding:16px 28px;background:#eef1e5;font-size:12px;color:var(--lp-muted,#526457)}@media(max-width:720px){.ds-preview{transform:none;max-width:470px;width:100%}}@media(prefers-reduced-motion:reduce){.ds-preview{transform:none}}"
+    },
+    {
+      "name": "Lime invitation",
+      "kind": "button",
+      "refersTo": "button-lime",
+      "description": "Hero link to the fictional Demo Business. Pointer press is enhanced by landing TypeScript; this specimen shows CSS hover and focus.",
+      "html": "<a class=\"ds-button ds-lime ds-focus\" href=\"#demo\">Take a look inside <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></a>",
+      "css": ".ds-button{min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:16px;padding:14px 22px 14px 24px;border:0;border-radius:8px;font:650 16px/1.4 'Segoe UI',sans-serif;text-decoration:none;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ds-button:hover{background:#cddd88;color:var(--lp-ink,#183e30)}.ds-focus:focus-visible{outline:3px solid #aa741b;outline-offset:6px}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-lime{background:var(--lp-lime,#dfed9b);color:var(--lp-ink,#183e30)}"
+    },
+    {
+      "name": "Dark action",
+      "kind": "button",
+      "refersTo": "button-dark",
+      "description": "Sign-in or Business-creation navigation on light surfaces.",
+      "html": "<a class=\"ds-button ds-dark ds-focus\" href=\"#sign-in\">Open sign in <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></a>",
+      "css": ".ds-button{min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:16px;padding:14px 22px 14px 24px;border:0;border-radius:8px;font:650 16px/1.4 'Segoe UI',sans-serif;text-decoration:none;cursor:pointer;transition:background-color 150ms,color 150ms}.ds-button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ds-button:hover{background:#cddd88;color:var(--lp-ink,#183e30)}.ds-focus:focus-visible{outline:3px solid #aa741b;outline-offset:6px}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-dark{background:var(--lp-green,#174b39);color:var(--lp-paper,#f7f3e7)}"
+    },
+    {
+      "name": "Receipt replay",
+      "kind": "button",
+      "refersTo": "replay",
+      "description": "Progressive replay control; CSS specimen only. Actual keyboard activation completes immediately and announces retained stock facts.",
+      "html": "<button class=\"ds-replay ds-focus\" type=\"button\">Replay the shop day <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 11a9 9 0 1 1 2.4 7M3 4v7h7\"/></svg></button>",
+      "css": ".ds-replay{display:inline-flex;gap:12px;align-items:center;border:0;border-bottom:1px solid currentColor;padding:8px 0;background:none;color:var(--lp-ink,#183e30);font:600 14px 'Segoe UI',sans-serif;cursor:pointer}.ds-replay:hover{color:#2b673d}.ds-replay svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ds-focus:focus-visible{outline:3px solid #aa741b;outline-offset:6px}"
+    },
+    {
+      "name": "Read-only example label",
+      "kind": "chip",
+      "refersTo": "example-pill",
+      "description": "Noninteractive qualifier adjacent to the fictional preview.",
+      "html": "<span class=\"ds-example\">Read-only example</span>",
+      "css": ".ds-example{font:400 12px/1.65 'Segoe UI',sans-serif;color:var(--lp-ink,#183e30);padding:3px 9px;background:#edf1df;border-radius:20px}"
+    },
+    {
+      "name": "Shopfront navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Wrapping native links with a bordered sign-in action; no hidden menu.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a href=\"#purpose\">How it works</a><a href=\"#demo\">Try the demo</a><a class=\"ds-sign-in\" href=\"#sign-in\">Sign in</a></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:32px;flex-wrap:wrap;background:var(--lp-green,#174b39);color:var(--lp-paper,#f7f3e7)}.ds-nav a{font:600 15px/1.65 'Segoe UI',sans-serif;color:inherit;text-decoration:none;text-underline-offset:5px}.ds-nav a:hover{text-decoration:underline}.ds-nav a:focus-visible{outline:3px solid var(--lp-apricot,#f2bd85);outline-offset:6px}.ds-sign-in{padding:9px 20px;box-shadow:0 0 0 1px #c9dac680;border-radius:8px}@media(max-width:720px){.ds-nav{gap:18px}.ds-nav a{font-size:13px}.ds-sign-in{padding:6px 12px}}"
+    },
+    {
+      "name": "Retained stock receipt",
+      "kind": "custom",
+      "refersTo": "receipt",
+      "description": "Opening, Purchase, Sale and closing balance stay visible; the current row highlights without removing history.",
+      "html": "<section class=\"ds-receipt\"><h3>A balance you can explain.</h3><ol class=\"ds-ledger\"><li><span>Opening stock<small>Before the delivery</small></span><strong>12</strong></li><li><span>Completed Purchase<small>8 units received · 20 on hand</small></span><strong>+8</strong></li><li class=\"ds-current\"><span>Completed Sale<small>5 units sold · 15 on hand</small></span><strong>−5</strong></li></ol><div class=\"ds-total\"><span>Closing stock</span><strong>15 units</strong></div><p>Corrections use recorded adjustments or reversals. Original Stock Movements remain in the history.</p></section>",
+      "css": ".ds-receipt{padding:40px 48px;background:var(--lp-receipt-paper,#fffcf2);color:var(--lp-ink,#183e30);font:400 17px/1.65 'Segoe UI',sans-serif}.ds-receipt h3{font:700 28px/1.15 Bricolage,'Segoe UI',sans-serif;letter-spacing:-.035em;margin:0 0 24px}.ds-ledger{padding:0;list-style:none;margin:0}.ds-ledger li{display:flex;gap:20px;justify-content:space-between;padding:14px 8px;border-bottom:1px solid var(--lp-line,#d7ddcb);transition:background-color 150ms}.ds-ledger small{display:block;font-size:13px;color:var(--lp-muted,#526457)}.ds-ledger strong{font-size:24px;font-variant-numeric:tabular-nums}.ds-current{background:var(--lp-ledger-current,#e5eecb)}.ds-total{display:flex;justify-content:space-between;gap:16px;align-items:center;padding-block:22px;border-bottom:2px solid var(--lp-ink,#183e30)}.ds-total strong{font:700 30px Bricolage,sans-serif}.ds-receipt p{font-size:13px;color:var(--lp-muted,#526457);margin:22px 0 0;max-width:380px}@media(max-width:1000px){.ds-receipt{padding:30px}}@media(max-width:720px){.ds-receipt{padding:28px}}@media(prefers-reduced-motion:reduce){.ds-ledger li{transition:none}}"
+    },
+    {
+      "name": "Demo credential disclosure",
+      "kind": "custom",
+      "refersTo": "credentials",
+      "description": "Native disclosure with selectable, wrapping credential text. Specimen placeholders are not live credentials.",
+      "html": "<div class=\"ds-credentials\"><details open><summary>Demo Owner</summary><dl><div><dt>Email</dt><dd><code>Fictional Owner email</code></dd></div><div><dt>Password</dt><dd><code>Fictional demo password</code></dd></div></dl></details><details><summary>Demo Staff Member</summary><p>Fictional Staff credentials</p></details><p>All demo records and identities are fictional.</p></div>",
+      "css": ".ds-credentials{padding:28px 40px;background:var(--lp-paper,#f7f3e7);color:var(--lp-ink,#183e30);font:400 17px/1.65 'Segoe UI',sans-serif}.ds-credentials details{padding-block:18px;border-bottom:1px solid var(--lp-line,#d7ddcb)}.ds-credentials summary{cursor:pointer;font:700 23px Bricolage,sans-serif}.ds-credentials summary:focus-visible{outline:3px solid #aa741b;outline-offset:6px}.ds-credentials dl{margin:20px 0 0}.ds-credentials dl>div{margin-bottom:14px}.ds-credentials dt{font-size:12px;color:var(--lp-muted,#526457)}.ds-credentials dd{margin:2px 0 0}.ds-credentials code{font-family:monospace;font-size:14px;overflow-wrap:anywhere;user-select:all}.ds-credentials>p{font-size:12px;margin-top:18px;color:var(--lp-muted,#526457)}@media(max-width:720px){.ds-credentials{padding:28px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Shop day, made visible",
+    "overview": "This system applies only to the public landing page, its dedicated stylesheet and its progressive enhancement. ShelfSum's existing green identity, warm surfaces and welcoming language supply the visual authority. The signed-in application and `static/css/site.css` retain their existing identity; this document does not prescribe a redesign of those screens.\n\nThe landing feels like an open shopfront: confident rounded display type, deep green fields, warm paper and practical stock facts. Tonal surfaces distinguish the shelf from its retained receipt. The example is explicitly fictional, and every stock fact remains readable without animation or JavaScript.",
+    "keyCharacteristics": [
+      "Green shopfront with warm paper, lime and apricot accents.",
+      "Large expressive headings paired with quiet system sans text.",
+      "Asymmetric opening and receipt-like stock evidence.",
+      "Finite, interruptible motion with immediate keyboard completion.",
+      "Native links and disclosures; usable static content."
+    ],
+    "rules": [
+      {
+        "name": "The Scoped Shopfront Rule",
+        "body": "Landing tokens belong to `.landing-page`; keep signed-in styling independent.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do keep landing tokens scoped to the public landing page.",
+      "Do preserve the green identity, warm surfaces and understandable language.",
+      "Do retain fictional, read-only labels beside illustrative records.",
+      "Do keep original stock rows visible through every replay state.",
+      "Do give keyboard replay its immediate final state and complete status explanation.",
+      "Do preserve the Bricolage font license with the self-hosted font."
+    ],
+    "donts": [
+      "Don't apply this landing system to signed-in screens without a separate request.",
+      "Don't hide essential facts behind motion or JavaScript.",
+      "Don't invent customers, adoption metrics or commercial outcomes for the examples.",
+      "Don't describe Estimated Profit as accounting, tax or cash profit.",
+      "Don't introduce an input, custom menu or copy-control pattern that this implementation does not have."
+    ]
+  }
+}

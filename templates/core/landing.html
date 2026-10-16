@@ -4,80 +4,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="ShelfSum helps small shops track stock and understand everyday business activity.">
-  <title>ShelfSum — stock and business activity, made clear</title>
-  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <meta name="description" content="Know what is on your shelves. ShelfSum brings stock, sales, purchases and expenses into one clear picture for your small shop.">
+  <title>ShelfSum — a clearer picture of your shop</title>
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}?v=20261016-motion">
+  <script src="{% static 'js/landing.js' %}" defer></script>
 </head>
-<body>
-  <header class="site-header">
-    <a class="brand" href="{% url 'landing' %}" aria-label="ShelfSum home">Shelf<span>Sum</span></a>
-    <nav aria-label="Main navigation">
-      <a href="#purpose">Purpose</a>
-      <a href="#evidence">Technical foundation</a>
-      <a href="{% url 'sign_in' %}">Sign in</a>
-      <a href="{% url 'register' %}">Create account</a>
-    </nav>
+<body class="landing-page">
+  <a class="lp-skip" href="#main">Skip to content</a>
+  <header class="lp-header lp-wrap">
+    <a class="lp-brand" href="{% url 'landing' %}" aria-label="ShelfSum home">Shelf<span>Sum</span><span class="lp-brand-mark" aria-hidden="true"></span></a>
+    <nav aria-label="Main navigation"><a href="#purpose">How it works</a><a href="#demo">Try the demo</a><a class="lp-sign-in" href="{% url 'sign_in' %}">Sign in</a></nav>
   </header>
-
-  <main>
-    <section class="hero" aria-labelledby="hero-title">
-      <p class="eyebrow">Stock clarity for everyday retail</p>
-      <h1 id="hero-title">Know what is on your shelves — and what the numbers mean.</h1>
-      <p class="hero-copy">ShelfSum is for a small-shop Owner and Staff Member team who need dependable stock records, straightforward daily activity, and reports they can explain.</p>
-      <div class="hero-actions">
-        <a class="button" href="#purpose">Explore the product scope</a>
+  <main id="main">
+    <section class="lp-opening" aria-labelledby="hero-title"><div class="lp-hero lp-wrap">
+      <div class="lp-hero-copy">
+        <h1 id="hero-title" data-hero-enter>A good day starts<br>with a <span>clear shelf.</span></h1>
+        <p data-hero-enter>Know what is on your shelves — and what the numbers mean. Stock, sales and everyday costs, brought into one clear picture.</p>
+        <div class="lp-actions" data-hero-enter><a class="lp-button lp-button-lime" href="#demo">Take a look inside <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a><a class="lp-text-link" href="{% url 'register' %}">Create your Business</a></div>
+        <p class="lp-hero-note" data-hero-enter>Built for small shops. Made for the people behind them.</p>
+      </div>
+      <figure class="lp-preview" data-hero-enter aria-labelledby="preview-caption">
+        <div class="lp-preview-top"><span class="lp-preview-brand">ShelfSum</span><span class="lp-pill">Read-only example</span></div>
+        <div class="lp-preview-heading"><span>Good morning, Shop Owner</span><h2>Your shelves,<br>at a glance.</h2></div>
+        <div class="lp-preview-summary"><div><span>Stock on Hand</span><strong>15 <small>units</small></strong></div><span class="lp-stock-label">In stock</span></div>
+        <div class="lp-preview-product"><span class="lp-product-mark" aria-hidden="true">R</span><div><strong>Rice · 1 kg</strong><span>Illustrative Product</span></div></div>
+        <ul class="lp-preview-movements" aria-label="Example stock movements"><li><span>Purchase completed<small>Stock received</small></span><strong>+8</strong></li><li><span>Sale completed<small>Stock sold</small></span><strong class="lp-out">−5</strong></li></ul>
+        <figcaption id="preview-caption">Fictional product preview · opening stock 12, closing stock 15</figcaption>
+      </figure>
+    </div></section>
+    <div class="lp-day-strip"><div class="lp-wrap"><span>Open the shop.</span><span>Record the day.</span><span>Understand the numbers.</span></div></div>
+    <section class="lp-story lp-wrap" id="purpose" aria-labelledby="story-title">
+      <div class="lp-section-intro" data-reveal><h2 id="story-title">Stock moves.<br><span>The story stays.</span></h2><p>A delivery arrives. A customer buys. A quantity needs correcting. ShelfSum keeps the reason behind every change, so your balance has a history you can follow.</p></div>
+      <div class="lp-stock-story" data-stock-story>
+        <div class="lp-stock-stage"><div class="lp-stage-heading"><span>Rice · 1 kg</span><span>Fictional example</span></div><div class="lp-stock-number"><span data-story-count>15</span><span>units on the shelf</span></div><div class="lp-unit-grid" aria-hidden="true">{% for unit in "abcdefghijklmnopqrst" %}<span class="lp-unit-slot"><span class="lp-unit{% if forloop.counter > 15 %} lp-unit-empty{% endif %}"></span></span>{% endfor %}</div><p data-story-description>12 to start. 8 received. 5 sold. Every movement retained.</p><button class="lp-replay" type="button" data-story-replay hidden>Replay the shop day <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.4 7M3 4v7h7"/></svg></button><p class="lp-sr-only" role="status" data-story-status></p></div>
+        <div class="lp-receipt"><h3>A balance you can explain.</h3><ol class="lp-ledger"><li data-story-step="0"><span>Opening stock<small>Before the delivery</small></span><strong>12</strong></li><li data-story-step="1"><span>Completed Purchase<small>8 units received · 20 on hand</small></span><strong>+8</strong></li><li data-story-step="2"><span>Completed Sale<small>5 units sold · 15 on hand</small></span><strong>−5</strong></li></ol><div class="lp-ledger-total"><span>Closing stock</span><strong>15 units</strong></div><p>Corrections use recorded adjustments or reversals. Original Stock Movements remain in the history.</p></div>
       </div>
     </section>
-
-    <section class="evidence demo-access" aria-labelledby="demo-access-title">
-      <p class="eyebrow">Try the product</p>
-      <h2 id="demo-access-title">Fictional Demo Business access</h2>
-      <p>All Demo Business records and identities are fictional. The Demo Business is read-only, so you can inspect its workflows, reports, and Audit Events without changing its data.</p>
-      <dl>
-        <div><dt>Owner</dt><dd><code>{{ demo_owner_email }}</code> / <code>{{ demo_owner_password }}</code></dd></div>
-        <div><dt>Staff Member</dt><dd><code>{{ demo_staff_email }}</code> / <code>{{ demo_staff_password }}</code></dd></div>
-      </dl>
-    </section>
-
-    <section class="purpose" id="purpose" aria-labelledby="purpose-title">
-      <div>
-        <p class="eyebrow">Built for small shops</p>
-        <h2 id="purpose-title">One clear record of stock and daily activity</h2>
-      </div>
-      <div class="principles">
-        <article>
-          <p class="number">01</p>
-          <h3>Traceable stock</h3>
-          <p>Every increase, sale, and correction has an explicit reason rather than an unexplained quantity edit.</p>
-        </article>
-        <article>
-          <p class="number">02</p>
-          <h3>Useful boundaries</h3>
-          <p>Owners manage access. Staff record everyday work. Each business sees only its own records.</p>
-        </article>
-        <article>
-          <p class="number">03</p>
-          <h3>Explainable figures</h3>
-          <p>Reports connect summaries to the sales, purchases, expenses, and movements beneath them.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="evidence" id="evidence" aria-labelledby="evidence-title">
-      <p class="eyebrow">Technical foundation</p>
-      <h2 id="evidence-title">A focused Django backend, made inspectable</h2>
-      <p>The release uses server-rendered Django, behaviour-focused tests, a lightweight local setup, and a PostgreSQL release path. The product remains useful without an AI model or paid API.</p>
-      <ul aria-label="Initial technical principles">
-        <li>Python 3.13</li>
-        <li>Django 5.2 LTS</li>
-        <li>Accessible server-rendered pages</li>
-        <li>Public behaviour tests</li>
-      </ul>
-    </section>
+    <section class="lp-workday" aria-labelledby="workday-title"><div class="lp-wrap lp-workday-grid">
+      <div><h2 id="workday-title">Less piecing<br>things together.<br><span>More seeing clearly.</span></h2><p>Keep your catalogue, Purchases, Sales and Expenses together. Follow the detail when a figure needs explaining.</p><a class="lp-text-link" href="#demo">Explore the Demo Business <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></div>
+      <dl class="lp-benefits"><div><dt>A catalogue that keeps you informed</dt><dd>See Stock on Hand and low-stock indicators. Open a Product to follow its movement history.</dd></div><div><dt>A place for the everyday work</dt><dd>Record Purchases, Sales, Expenses and stock adjustments with understandable forms and clear statuses.</dd></div><div><dt>Figures with the detail attached</dt><dd>Review reports and CSV exports for Sales, Purchases, Expenses, stock position and Stock Movements.</dd></div></dl>
+    </div></section>
+    <section class="lp-team lp-wrap" aria-labelledby="team-title"><div><h2 id="team-title">One shop.<br>A shared picture.</h2><p>Owners manage their Business and Staff Members. Staff record day-to-day activity. Each Business sees only its own records.</p></div><div class="lp-role-note"><h3>Clear roles. Dependable records.</h3><p>Permissions and stock changes are checked by the backend. Completing a Purchase or Sale records the stock change together with its history.</p><p>Estimated Profit connects sales revenue, recorded cost snapshots and Expenses. It is an operational estimate, not accounting, tax or cash profit.</p></div></section>
+    <section class="lp-demo" id="demo" aria-labelledby="demo-title"><div class="lp-wrap">
+      <div class="lp-demo-heading" data-reveal><h2 id="demo-title">Come in.<br><span>Have a look around.</span></h2><p>Try the fictional Demo Business as an Owner or Staff Member. Browse the shop workflows and reports. It’s read-only, so the shared records stay intact.</p></div>
+      <div class="lp-demo-access"><div class="lp-demo-invitation"><span class="lp-demo-seal">Demo<br>Business</span><h3>Your first look<br>at a clearer shop.</h3><a class="lp-button lp-button-dark" href="{% url 'sign_in' %}">Open sign in <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a><p>Use either set of demo credentials shown here.</p></div><div class="lp-credentials"><details open><summary>Demo Owner</summary><dl><div><dt>Email</dt><dd><code>{{ demo_owner_email }}</code></dd></div><div><dt>Password</dt><dd><code>{{ demo_owner_password }}</code></dd></div></dl></details><details><summary>Demo Staff Member</summary><dl><div><dt>Email</dt><dd><code>{{ demo_staff_email }}</code></dd></div><div><dt>Password</dt><dd><code>{{ demo_staff_password }}</code></dd></div></dl></details><p>All demo records and identities are fictional.</p></div></div>
+    </div></section>
+    <section class="lp-close lp-wrap" aria-labelledby="close-title"><h2 id="close-title">Your shop has a story.<br>Keep a clear record of it.</h2><a class="lp-button lp-button-dark" href="{% url 'register' %}">Create your Business <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></section>
   </main>
-
-  <footer>
-    <p>ShelfSum is a portfolio product for demonstrating practical backend engineering.</p>
-  </footer>
+  <footer class="lp-footer"><div class="lp-wrap"><a class="lp-brand" href="{% url 'landing' %}">Shelf<span>Sum</span></a><p>A portfolio product demonstrating practical backend engineering.</p><details id="evidence"><summary>Under the shelves</summary><p>Server-rendered Django 5.2 LTS · Python 3.13 · PostgreSQL release verification · behaviour-focused tests. Core workflows work without JavaScript.</p></details></div></footer>
 </body>
 </html>
